@@ -199,9 +199,10 @@
 {% endif %}
 
 <!-- Theme Color -->
-{% set themeColor = themeColor|default('#ffffff') %}
-<meta name="theme-color" content="{{ themeColor }}">
-<meta name="msapplication-TileColor" content="{{ themeColor }}">
+{% if themeColor %}
+	<meta name="theme-color" content="{{ themeColor }}">
+	<meta name="msapplication-TileColor" content="{{ themeColor }}">
+{% endif %}
 
 <!-- Color Scheme -->
 {% if colorScheme is defined %}
