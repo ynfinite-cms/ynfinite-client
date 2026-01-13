@@ -12,6 +12,13 @@ const YnfiniteLanguageSwitch = {
 			e.stopPropagation()
 			languageSwitchWrapper.classList.toggle('yn-open')
 		})
+
+		// Close when clicking outside the switch
+		document.addEventListener('click', (e) => {
+			if (!languageSwitchWrapper.contains(e.target)) {
+				languageSwitchWrapper.classList.remove('yn-open')
+			}
+		})
 	},
 }
 

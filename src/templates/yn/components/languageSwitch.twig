@@ -17,13 +17,19 @@
     <div class="yn-languageSwitch {% if options.classes %}{{ options.classes }}{% endif %}">
         {% if not noPopup %}
             <div class="yn-languageSwitch-button">
-                <?xml version="1.0" encoding="utf-8"?><!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
-                <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M26.25 15C26.25 21.2132 21.2132 26.25 15 26.25C8.7868 26.25 3.75 21.2132 3.75 15C3.75 8.7868 8.7868 3.75 15 3.75C21.2132 3.75 26.25 8.7868 26.25 15Z" stroke="currentColor" stroke-width="2"/>
-                    <path d="M15 3.81943C18.06875 6.56603 20 10.55746 20 15C20 19.4425 18.06875 23.43389 15 26.18055" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M15.078125 26.25C11.964075 23.5015 10 19.4801 10 15C10 10.5199 11.964075 6.4985 15.078125 3.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M3.75 15H26.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                {% if showFlag %}
+                    {% set key = _ynfinite.languages.current %}
+                    {% set flagKey = replacers[key] is defined ? replacers[key] : key %}
+                    <img style="width: 40px; height: 40px" class="yn-languageSwitch-flag" src="/assets/vendor/ynfinite/flags/{{ flagKey }}.svg" alt="{{ key }}" />
+                {% else %}
+                    <?xml version="1.0" encoding="utf-8"?><!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+                    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M26.25 15C26.25 21.2132 21.2132 26.25 15 26.25C8.7868 26.25 3.75 21.2132 3.75 15C3.75 8.7868 8.7868 3.75 15 3.75C21.2132 3.75 26.25 8.7868 26.25 15Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M15 3.81943C18.06875 6.56603 20 10.55746 20 15C20 19.4425 18.06875 23.43389 15 26.18055" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M15.078125 26.25C11.964075 23.5015 10 19.4801 10 15C10 10.5199 11.964075 6.4985 15.078125 3.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M3.75 15H26.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                {% endif %}
             </div>
         {% endif %}
         <div class="yn-languageSwitch-wrapper {% if not noPopup %}yn-languageSwitch-popup{% endif %}">
@@ -37,6 +43,7 @@
 
                  <a href="{{ url }}" title="{{ key }}" class="yn-languageSwitch-link {% if active == key %}yn-languageSwitch-active{% endif %}">
                     <img class="yn-languageSwitch-flag" src="/assets/vendor/ynfinite/flags/{{ flagKey }}.svg" alt="{{ key }}" />
+                    <span class="yn-languageSwitch-name">{{ ('yn_lang_' ~ key)|trans }}</span>
                 </a>
             {% endfor %}
         </div>
