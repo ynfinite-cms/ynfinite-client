@@ -20,7 +20,7 @@ class IsCookieActiveSeo extends \Twig\TokenParser\AbstractTokenParser
         $parser = $this->parser;
         $stream = $parser->getStream();
         
-        $nameExpr = $parser->getExpressionParser()->parsePrimaryExpression();
+        $nameExpr = $parser->parseExpression();
 
         $stream->expect(\Twig\Token::BLOCK_END_TYPE);
         $body = $parser->subparse([$this, 'decideIfEnd']);

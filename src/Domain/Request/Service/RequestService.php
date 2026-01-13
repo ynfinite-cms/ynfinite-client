@@ -66,20 +66,6 @@ class RequestService {
         return true;
     }
 
-    protected function validateReferer($referer, $fallback) {
-        if (empty($referer)) {
-            return $fallback;
-        }
-        
-        // Check if referer is a valid URI with http or https schema
-        if (filter_var($referer, FILTER_VALIDATE_URL) && preg_match('/^https?:\\/\\//i', $referer)) {
-            return $referer;
-        }
-        
-        // Fallback to the constructed URL if referer is invalid
-        return $fallback;
-    }
-
     protected function getBody($request) {
         $files = $this->getFiles($request);
         $body = $request->getParsedBody();
@@ -107,15 +93,12 @@ class RequestService {
             $ip = $ip[0];
         }
 
-        $referer = array_key_exists("HTTP_REFERER", $_SERVER) ? $_SERVER['HTTP_REFERER'] : $url;
-        $referer = $this->validateReferer($referer, $url);
-
         $postBody = array_merge(array(
             "method" => $request->getMethod(),
             "url" => $url,
             "ip" => $ip,
             "session" => json_encode($_SESSION),
-            "referer" => $referer
+            "referer" => array_key_exists("HTTP_REFERER", $_SERVER) ? $_SERVER['HTTP_REFERER'] : $url
         ), $files);
 
         if($body) {
@@ -128,6 +111,10 @@ class RequestService {
     protected function request($path, $service, $body = array(), $json = true)
     {
         $this->curlHandler->setUrl($service, $path);
+
+        if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            $this->curlHandler->addHeader("Accept-Language", $_SERVER['HTTP_ACCEPT_LANGUAGE']);
+        }
         
         $response = $this->curlHandler->exec($body);  
         $body = $response["body"];

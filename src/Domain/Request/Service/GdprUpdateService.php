@@ -28,6 +28,7 @@ final class GdprUpdateService extends RequestService
         $path = $request->getUri()->getPath();
         
         $postBody = $this->getBody($request);
+        $postBody["referer"] = $_SERVER['HTTP_REFERER'];
 
         $response = $this->request(trim($path), $this->settings["services"]["gdpr_update"], $postBody, $jsonResponse);
 
