@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 	{% for page in sitemap %}
-		<url>
-			<loc>{{page.loc}}</loc>
-			<lastmod>{{page.lastmod}}</lastmod>
-			<changefreq>{{page.changefreq}}</changefreq>
-			<priority>{{page.priority}}</priority>
-			{% for alt in page.alternatives %}
-				<link rel="alternate" hreflang="{{alt.language}}" href="{{alt.url}}"/>
-			{% endfor %}
-		</url>
+		{% if page and page.loc %}		
+			<url>
+				<loc>{{ page.loc }}</loc>
+				<lastmod>{{ page.lastmod }}</lastmod>
+				<changefreq>{{ page.changefreq }}</changefreq>
+				<priority>{{page.priority }}</priority>
+				{% if page.alternatives is defined and page.alternatives is iterable %}
+					{% for alt in page.alternatives %}
+						{% if alt.language and alt.url %}
+							<xhtml:link rel="alternate" hreflang="{{ alt.language }}" href="{{ alt.url }}"/>
+						{% endif %}
+					{% endfor %}
+				{% endif %}
+			</url>
+		{% endif %}
 	{% endfor %}
 </urlset>
