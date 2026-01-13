@@ -12,8 +12,8 @@
 			(function() {
 				var u=`//${_yn_url}`;
 				_paq.push(['setTrackerUrl', u+'matomo.php']);
-				_paq.push(['setSiteId', '1']);
-				_paq.push(['setDomains', ["*.{{_ynfinite.domain.hostname}}"]]);
+				_paq.push(['setSiteId', '{{ _yn_tracking_tool.siteId|default(1) }}']);
+				_paq.push(['setDomains', ["*.{{ _yn_tracking_tool.domain|default(_ynfinite.domain.hostname) }}"]]);
 				var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
 				g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
 			})();
@@ -36,9 +36,16 @@
 
 				{% if _yn_tracking_pageViews %}
 					const _yn_trackPageView = () => {
-						_paq.push(['trackPageView']);
+						if(!window._yn_skipMatomoPageView){
+							const params = window._yn_matomoParams || {};
+							if(params.title){
+								_paq.push(['trackPageView', params.title]);
+							} else {
+								_paq.push(['trackPageView']);
+							}
+						}
 					}
-					window. _yn_pageViewEvents.push(_yn_trackPageView);
+					window._yn_pageViewEvents.push(_yn_trackPageView);
 				{% endif %}
 
 				// ==================================================
@@ -46,8 +53,16 @@
 				// ==================================================
 
 				{% if _yn_tracking_submit_form %}
-					function _yn_formTracking(_yn_name) {
-						_paq.push(['trackEvent', 'Form Submit', _yn_name]);
+					function _yn_formTracking(_yn_name, _yn_id, _yn_eventName, _yn_formData) {
+						if(!window._yn_skipMatomoForm){
+							let params = window._yn_matomoParams || {};
+							
+							if(_yn_formData){
+								params = { ...params, ..._yn_formData }
+							}
+
+							_paq.push(['trackEvent', params.category || 'Form Submit', params.action || _yn_name, params.name, params.value]);
+						}
 					}
 					window._yn_formEvents.push(_yn_formTracking);
 				{% endif %}
@@ -58,21 +73,41 @@
 
 				{% if _yn_tracking_video %}
 					const _yn_videoTracking = (_yn_video) => {
-						const _yn_videoState = _yn_video.state;
-						const _yn_videoUrl = _yn_video.url;
-						const _yn_videoPercent = Math.round(_yn_video.percent * 100) + '%';
+						if(!window._yn_skipMatomoVideo){
+							const _yn_videoState = _yn_video.state;
+							const _yn_videoUrl = _yn_video.url;
+							const _yn_videoPercent = Math.round(_yn_video.percent * 100) + '%';
 
-						switch (_yn_videoState) {
-							case 0: 
-								_paq.push(['trackEvent', 'Video complete', _yn_videoUrl]);
-								break;
-							case 1: 
-								_paq.push(['trackEvent', 'Video start', _yn_videoUrl]);
-								break;
-							case 2: 
-								_paq.push(['trackEvent', 'Video pause', _yn_videoUrl, _yn_videoPercent]);
-								break;
-							default:
+							let category, action, name, value;
+
+							switch (_yn_videoState) {
+								case 0: 
+									category = 'Video complete';
+									action = _yn_videoUrl;
+									break;
+								case 1: 
+									category = 'Video start';
+									action = _yn_videoUrl;
+									break;
+								case 2: 
+									category = 'Video pause';
+									action = _yn_videoUrl;
+									name = _yn_videoPercent;
+									break;
+								default:
+							}
+
+							if(window._yn_matomoParams){
+								const params = window._yn_matomoParams;
+								category = params.category || category;
+								action = params.action || action;
+								name = params.name || name;
+								value = params.value || value;
+							}
+
+							if(category){
+								_paq.push(['trackEvent', category, action, name, value]);
+							}
 						}
 					}
 				
@@ -81,28 +116,35 @@
 
 				// ==================================================
 				// Add Link Tracking
-				// ==================================================
-
 				{% if _yn_tracking_external or _yn_tracking_downloads or _yn_tracking_email or _yn_tracking_tel %}
 					const _yn_linkTracking = (_yn_eventName = 'click', _yn_url) => {
-						if(_yn_eventName === 'click') _yn_eventName = 'External Link Click'
-						if(_yn_eventName === 'click_mail') _yn_eventName = 'Mail Link Click'
-						if(_yn_eventName === 'click_phone') _yn_eventName = 'Phone Link Click'
-						if(_yn_eventName === 'click_download') _yn_eventName = 'Download Link Click'
-						_paq.push(['trackEvent', 'Link Click', _yn_eventName, _yn_url]);
+						if(!window._yn_skipMatomoLink){
+							if(_yn_eventName === 'click') _yn_eventName = 'External Link Click'
+							if(_yn_eventName === 'click_mail') _yn_eventName = 'Mail Link Click'
+							if(_yn_eventName === 'click_phone') _yn_eventName = 'Phone Link Click'
+							if(_yn_eventName === 'click_download') _yn_eventName = 'Download Link Click'
+							
+							const params = window._yn_matomoParams || {};
+							_paq.push(['trackEvent', params.category || 'Link Click', params.action || _yn_eventName, params.name || _yn_url]);
+						}
 					}
+					window._yn_linkEvents.push(_yn_linkTracking)
+				{% endif %}
 					window._yn_linkEvents.push(_yn_linkTracking)
 				{% endif %}
 
 				// ==================================================
 				// Scroll Tracking
-				// ==================================================
-
 				{% if _yn_tracking_pageScroll %}
 					const _yn_scrollTracking = (_yn_name, _yn_depth) => {
-						_paq.push(['trackEvent', 'Scroll', 'Section', _yn_name]);
-						_paq.push(['trackEvent', 'Scroll depth', _yn_depth + '%']);
+						if(!window._yn_skipMatomoScroll){
+							const params = window._yn_matomoParams || {};
+							_paq.push(['trackEvent', params.category || 'Scroll', params.action || 'Section', params.name || _yn_name]);
+							_paq.push(['trackEvent', 'Scroll depth', _yn_depth + '%']);
+						}
 					}
+					window._yn_scrollEvents.push(_yn_scrollTracking)
+				{% endif %}
 					window._yn_scrollEvents.push(_yn_scrollTracking)
 				{% endif %}
 

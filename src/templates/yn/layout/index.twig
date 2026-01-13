@@ -30,6 +30,7 @@
 			{% include 'yn/layout/head.twig' %}
 		{% endblock %}
 		{% include "yn/layout/includes/structuredData.twig" %}
+		{% include "yn/layout/includes/eventsSetup.twig" %}
 		{% include "yn/layout/includes/tracking.twig" %}
 		{% include "yn/layout/includes/retargeting.twig" %}
 	</head>
@@ -64,7 +65,7 @@
 			{% isScriptActive "form:file" %}
 				<script src='{{ _yfunc("withVersion", "/assets/vendor/ynfinite/js/upload/upload.js") }}'></script>
 			{% endIsScriptActive %}
-			{% include "yn/layout/includes/trackingEvents.twig" %}
+			{% include "yn/layout/includes/globalEvents.twig" %}
 		{% endblock footer_scripts %}
  
 		{% block cookies %}

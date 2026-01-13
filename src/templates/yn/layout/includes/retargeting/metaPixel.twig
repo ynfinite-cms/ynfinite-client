@@ -11,7 +11,6 @@
 		s.parentNode.insertBefore(t,s)}(window, document,'script',
 		'https://connect.facebook.net/en_US/fbevents.js');
 		fbq('init', '{{_yn_retargeting_tool.key}}');
-		fbq('track', 'PageView');
 		</script>
 		<noscript>
 		<img height="1" width="1" style="display:none" 
@@ -24,6 +23,74 @@
 				console.log('%c-> Meta Pixel added <-',  'color: #e91f63')
 			}	
 			window.addedScripts.push('meta-pixel')
+
+			// ==================================================
+			// Page View Tracking
+			// ==================================================
+
+			{% if _ynfinite.site.seo.events.pageViews %}
+				const _yn_metaPixelPageViewTracking = () => {
+					if(!window._yn_skipMetaPixelPageView){
+						let pageViewParams = {};
+						if(window._yn_metaPixelParams){
+							pageViewParams = window._yn_metaPixelParams;
+						}
+
+						fbq('track', 'PageView', pageViewParams);
+						if(_yn_debug){
+							console.log('%c-> Meta Pixel PageView Event fired <-',  'color: #e91f63')
+						}
+					}
+
+					{% if _ynfinite.content %}
+						if(!window._yn_skipMetaPixelViewContent){
+							let params = {
+								content_name: '{{ _ynfinite.content.data.general_title }}',
+								content_ids: ['{{ _ynfinite.content._id }}'],
+							};
+
+							if(window._yn_metaPixelParams){
+								params = { ...params, ...window._yn_metaPixelParams }
+							}
+
+							fbq('track', 'ViewContent', params);
+							
+							if(_yn_debug){
+								console.log('%c-> Meta Pixel ViewContent Event fired <-',  'color: #e91f63')
+							}
+						}
+					{% endif %}
+				}
+				window._yn_pageViewEvents.push(_yn_metaPixelPageViewTracking)
+			{% endif %}
+
+			// ==================================================
+			// Form Tracking
+			{% if _ynfinite.site.seo.events.submitForm %}
+				const _yn_metaPixelFormTracking = (name, id, eventName, formData) => {
+					if(eventName === 'form_success' && !window._yn_skipMetaPixelContact){
+						let params = {
+							content_name: name,
+							content_category: 'Contact Form'
+						}
+
+						if(formData){
+							params = { ...params, ...formData }
+						}
+
+						if(window._yn_metaPixelParams){
+							params = { ...params, ...window._yn_metaPixelParams }
+						}
+
+						fbq('track', 'Contact', params);
+						if(_yn_debug){
+							console.log('%c-> Meta Pixel Contact Event fired <-',  'color: #e91f63')
+						}
+					}
+				}
+
+				window._yn_formEvents.push(_yn_metaPixelFormTracking)
+			{% endif %}
 		</script>
 	{% endIsCookieActiveSeo %}
 {% endif %}
