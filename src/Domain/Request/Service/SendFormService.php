@@ -29,7 +29,6 @@ final class SendFormService extends RequestService
         $path = $request->getUri()->getPath();
     
         $postBody = $this->getBody($request);
-        $postBody["referer"] = $_SERVER['HTTP_REFERER'];
         
         if($postBody['method'] === "post" && !$this->securityCheck($request)) {
             return $this->securityError;

@@ -27,7 +27,6 @@ final class ApiGetContentService extends RequestService
         $path = $request->getUri()->getPath();
         
         $postBody = $this->getBody($request);
-        $postBody["referer"] = $_SERVER['HTTP_REFERER'];
 
         $response = $this->request(trim($path), $this->settings["services"]["api/getContent"], $postBody, true);
 
