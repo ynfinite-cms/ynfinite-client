@@ -6,7 +6,7 @@
 				<loc>{{ page.loc }}</loc>
 				<lastmod>{{ page.lastmod }}</lastmod>
 				<changefreq>{{ page.changefreq }}</changefreq>
-				<priority>{{page.priority }}</priority>
+				<priority>{{ page.priority|replace({'1': '1.0'}) }}</priority>
 				{% if page.alternatives is defined and page.alternatives is iterable %}
 					{% for alt in page.alternatives %}
 						{% if alt.language and alt.url %}
