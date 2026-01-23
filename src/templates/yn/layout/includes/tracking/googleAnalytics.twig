@@ -75,13 +75,21 @@
 				// ==================================================
 				{% if _yn_tracking_pageViews %}
 					const _yn_trackPageView = () => {
-						const _yn_eventName = 'page_view'
+						if(!window._yn_skipGoogleAnalyticsPageView){
+							const _yn_eventName = 'page_view'
 
-						gtag('event', _yn_eventName, {
-							page_title: '{{ _ynfinite.page.name }}',
-							page_referrer: '{{ _ynfinite.domain.referrer }}',
-							page_location: '{{ _ynfinite.domain.href }}',
-						});
+							let params = {
+								page_title: '{{ _ynfinite.page.name }}',
+								page_referrer: '{{ _ynfinite.domain.referrer }}',
+								page_location: '{{ _ynfinite.domain.href }}',
+							};
+
+							if(window._yn_googleAnalyticsParams){
+								params = { ...params, ...window._yn_googleAnalyticsParams }
+							}
+
+							gtag('event', _yn_eventName, params);
+						}
 					}
 					window._yn_pageViewEvents.push(_yn_trackPageView);
 				{% endif %}
@@ -92,92 +100,127 @@
 
 				{% if _yn_tracking_submit_form %}
 					function _yn_formTracking(_yn_name, _yn_id, _yn_eventName, _yn_formData) {
-						if(_yn_eventName == 'form_submit'){
-							_yn_eventName = 'form_start'
-						}
+						if(!window._yn_skipGoogleAnalyticsForm){
+							if(_yn_eventName == 'form_submit'){
+								_yn_eventName = 'form_start'
+							}
 
-						gtag('event', _yn_eventName, {
-							page_title: '{{ _ynfinite.page.name }}',
-							page_referrer: '{{ _ynfinite.domain.referrer }}',
-							page_location: '{{ _ynfinite.domain.href }}',
-							form_name: _yn_name,
-							form_id: _yn_id,
-							formData: _yn_formData
-						});
+							let params = {
+								page_title: '{{ _ynfinite.page.name }}',
+								page_referrer: '{{ _ynfinite.domain.referrer }}',
+								page_location: '{{ _ynfinite.domain.href }}',
+								form_name: _yn_name,
+								form_id: _yn_id,
+							};
+
+							if(_yn_formData){
+								params = { ...params, ..._yn_formData }
+							}
+
+							if(window._yn_googleAnalyticsParams){
+								params = { ...params, ...window._yn_googleAnalyticsParams }
+							}
+
+							gtag('event', _yn_eventName, params);
+						}
 					}
 					window._yn_formEvents.push(_yn_formTracking);
 				{% endif %}
 
 				// ==================================================
 				// Video Tracking
-				// ==================================================
-
 				{% if _yn_tracking_video %}
 					const _yn_videoTracking = (_yn_video) => {
-						let _yn_eventName
-						switch (_yn_video.state) {
-							case 0: 
-								_yn_eventName = 'video_complete'
-								break;
-							case 1: 
-								_yn_eventName = 'video_start'
-								break;
-							case 2: 
-								_yn_eventName = 'video_pause'
-								break;
-							default:
-								_yn_eventName = undefined
-						}
+						if(!window._yn_skipGoogleAnalyticsVideo){
+							let _yn_eventName
+							switch (_yn_video.state) {
+								case 0: 
+									_yn_eventName = 'video_complete'
+									break;
+								case 1: 
+									_yn_eventName = 'video_start'
+									break;
+								case 2: 
+									_yn_eventName = 'video_pause'
+									break;
+								default:
+									_yn_eventName = undefined
+							}
 
-						if(_yn_eventName !== undefined && (_yn_video.state === 1 || _yn_video.currentTime > 1)){
-							gtag('event', _yn_eventName, {
-								page_title: '{{ _ynfinite.page.name }}',
-								page_referrer: '{{ _ynfinite.domain.referrer }}',
-								page_location: '{{ _ynfinite.domain.href }}',
-								video_title: _yn_video.title,
-								video_url: _yn_video.url,
-								video_state: _yn_video.state,
-								video_percent: _yn_video.percent,
-								video_duration: _yn_video.duration,
-								video_currentTime: _yn_video.currentTime,
-								video_provider: _yn_video.provider
-							});
+							if(_yn_eventName !== undefined && (_yn_video.state === 1 || _yn_video.currentTime > 1)){
+								let params = {
+									page_title: '{{ _ynfinite.page.name }}',
+									page_referrer: '{{ _ynfinite.domain.referrer }}',
+									page_location: '{{ _ynfinite.domain.href }}',
+									video_title: _yn_video.title,
+									video_url: _yn_video.url,
+									video_state: _yn_video.state,
+									video_percent: _yn_video.percent,
+									video_duration: _yn_video.duration,
+									video_currentTime: _yn_video.currentTime,
+									video_provider: _yn_video.provider
+								};
+
+								if(window._yn_googleAnalyticsParams){
+									params = { ...params, ...window._yn_googleAnalyticsParams }
+								}
+
+								gtag('event', _yn_eventName, params);
+							}
 						}
 					}
 				
 					window._yn_videoEvents.push(_yn_videoTracking);
 				{% endif %}
-
-				// ==================================================
-				// Add Link Tracking
-				// ==================================================
+					window._yn_videoEvents.push(_yn_videoTracking);
+				{% endif %}
 
 				{% if _yn_tracking_external or _yn_tracking_downloads or _yn_tracking_email or _yn_tracking_tel %}
 					const _yn_linkTracking = (_yn_eventName = 'click', _yn_url) => {
-						gtag('event', _yn_eventName, {
-							page_title: '{{ _ynfinite.page.name }}',
-							page_referrer: '{{ _ynfinite.domain.referrer }}',
-							page_location: '{{ _ynfinite.domain.href }}',
-							link_url: _yn_url
-						});
+						if(!window._yn_skipGoogleAnalyticsLink){
+							let params = {
+								page_title: '{{ _ynfinite.page.name }}',
+								page_referrer: '{{ _ynfinite.domain.referrer }}',
+								page_location: '{{ _ynfinite.domain.href }}',
+								link_url: _yn_url
+							};
+
+							if(window._yn_googleAnalyticsParams){
+								params = { ...params, ...window._yn_googleAnalyticsParams }
+							}
+
+							gtag('event', _yn_eventName, params);
+						}
 					}
 					window._yn_linkEvents.push(_yn_linkTracking)
 				{% endif %}
-
-				// ==================================================
-				// Scroll Tracking
-				// ==================================================
-				
+						gtag('event', _yn_eventName, params);
+					}
+					window._yn_linkEvents.push(_yn_linkTracking)
 				{% if _yn_tracking_pageScroll %}
 					const _yn_scrollTracking = (_yn_name, _yn_depth) => {
-						const _yn_eventName = 'scroll'
-						gtag('event', _yn_eventName, {
-							page_title: '{{ _ynfinite.page.name }}',
-							page_referrer: '{{ _ynfinite.domain.referrer }}',
-							page_location: '{{ _ynfinite.domain.href }}',
-							page_section: _yn_name,
-							percent_scrolled: _yn_depth,
-						});
+						if(!window._yn_skipGoogleAnalyticsScroll){
+							const _yn_eventName = 'scroll'
+							let params = {
+								page_title: '{{ _ynfinite.page.name }}',
+								page_referrer: '{{ _ynfinite.domain.referrer }}',
+								page_location: '{{ _ynfinite.domain.href }}',
+								page_section: _yn_name,
+								percent_scrolled: _yn_depth,
+							};
+
+							if(window._yn_googleAnalyticsParams){
+								params = { ...params, ...window._yn_googleAnalyticsParams }
+							}
+
+							gtag('event', _yn_eventName, params);
+						}
+					}
+					window._yn_scrollEvents.push(_yn_scrollTracking)
+				{% endif %} { ...params, ...window._yn_googleAnalyticsParams }
+						}
+
+						gtag('event', _yn_eventName, params);
 					}
 					window._yn_scrollEvents.push(_yn_scrollTracking)
 				{% endif %}

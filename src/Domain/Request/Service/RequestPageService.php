@@ -67,7 +67,7 @@ final class RequestPageService extends RequestService
         $disallowedStrings = ['_y__ynfinitePerPage', '_y__ynfinitePage', '_y_perPage', '_y_page', '&amp%3B'];
         foreach ($disallowedStrings as $string) {
             if (strpos($currentURL, $string) !== false) {
-            return false;
+                return false;
             }
         }
 

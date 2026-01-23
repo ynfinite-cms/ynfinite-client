@@ -1,0 +1,14 @@
+{# * Events Setup #}
+{% set _yn_tracking = _ynfinite.site.seo.tracking.active %}
+{% set _yn_retargeting = _ynfinite.site.seo.retargeting.active %}
+{% set _yn_seo_debug = _ynfinite.site.seo.general.debug %}
+
+{% if (_yn_tracking or _yn_retargeting) and ('localhost' not in _ynfinite.currentDomain or _yn_seo_debug) %}
+    <script>
+        window._yn_pageViewEvents = window._yn_pageViewEvents || []
+        window._yn_scrollEvents = window._yn_scrollEvents || []
+        window._yn_videoEvents = window._yn_videoEvents || []
+        window._yn_formEvents = window._yn_formEvents || []
+        window._yn_linkEvents = window._yn_linkEvents || []
+    </script>
+{% endif %}

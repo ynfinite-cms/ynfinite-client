@@ -2,14 +2,14 @@
 	{% set title	= _ynfinite.content.settings.seo.title ?: _ynfinite.page.meta.title %}
 
 	{% if _ynfinite.pagination.currentPage > 1 %}
-		{% set title = title ~ ' - ' ~ "yn_listingsPagePrefix"|trans ~ ' ' ~ _ynfinite.pagination.currentPage %}
+		{% set title = title ~ ' - ' ~ ("yn_listingsPagePrefix"|trans) ~ ' ' ~ _ynfinite.pagination.currentPage %}
 	{% endif %}
 {% endif %}
 
 {% set _yn_global_sitename = _yn_global_sitename ?: global_seo_ending ?: _ynfinite.site.meta.title %}
 {% set seoTitle	= title ?: _ynfinite.site.meta.title %}
 {% if _yn_global_sitename|length > 0 and title|length > 0 and _yn_global_sitename|lower not in title|lower and hideTitle|default(false) != true %}
-	{% set seoTitle = title|raw ~ ' - ' ~ _yn_global_sitename|raw %}
+	{% set seoTitle = (title|raw) ~ ' - ' ~ (_yn_global_sitename|raw) %}
 {% endif %}
 
 <!-- Seo Meta Tags -->
@@ -23,14 +23,39 @@
 <meta name="keywords" content="{{ seoKeywords }}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="{{ _ynfinite.page.meta.robots|default("index,follow") }}">
+{% set referrerPolicy = referrerPolicy|default('no-referrer-when-downgrade') %}
+<meta name="referrer" content="{{ referrerPolicy }}">
 
 <!-- General Open Graph Tags -->
 {% set ogSite_name = _ynfinite.site.meta.title ?: _ynfinite.page.meta.title %}
-{% set ogType = _ynfinite.content.setting.opengraph.type ?: _ynfinite.page.meta.opengraph.image.file_type|default("website") %}
+{% set ogType = _ynfinite.content.settings.opengraph.type ?: _ynfinite.page.meta.opengraph.image.file_type|default("website") %}
 {% set ogTitle = _ynfinite.content.settings.opengraph.title ?: _ynfinite.content.settings.seo.title|default(_ynfinite.page.meta.opengraph.title) %}
 {% set ogDesc = _ynfinite.content.settings.opengraph.description ?: _ynfinite.content.settings.seo.description|default(_ynfinite.page.meta.opengraph.description) %}
 {% set ogImage = _ynfinite.content.settings.opengraph.images[0] ?:  _ynfinite.page.meta.opengraph.image|default(null) %}
-{% set ogLocale = _ynfinite.languages.current ? _ynfinite.languages.current == "en" ? "en_US" : "de_DE" : "de_DE" %}
+
+{# Map language codes to proper locale strings #}
+{% set localeMap = {
+	'ar': 'ar_AR',
+	'cs': 'cs_CZ',
+	'da': 'da_DK',
+	'de': 'de_DE',
+	'en': 'en_US',
+	'es': 'es_ES',
+	'fr': 'fr_FR',
+	'it': 'it_IT',
+	'ja': 'ja_JP',
+	'ko': 'ko_KR',
+	'lb': 'lb_LU',
+	'nl': 'nl_NL',
+	'pl': 'pl_PL',
+	'pt': 'pt_PT',
+	'ru': 'ru_RU',
+	'tr': 'tr_TR',
+	'uk': 'uk_UA',
+	'zh': 'zh_CN'
+} %}
+{% set currentLang = _ynfinite.languages.current|default('en') %}
+{% set ogLocale = localeMap[currentLang]|default('en_US') %}
 
 {% if ogSite_name %}
 	<meta property="og:site_name" content="{{ ogSite_name }}">
@@ -47,6 +72,11 @@
 {% endif %}
 {% if ogLocale %}
 	<meta property="og:locale" content="{{ ogLocale }}">
+	{% for lang in _ynfinite.languages.available|default([])|filter(l => l.code != currentLang) %}
+		{% if localeMap[lang.code] is defined %}
+			<meta property="og:locale:alternate" content="{{ localeMap[lang.code] }}">
+		{% endif %}
+	{% endfor %}
 {% endif %}
 
 {% if ogImage %}
@@ -81,33 +111,31 @@
 	{% endif %}
 {% endif %}
 
-{% if ogTitle or ogDesc or ogImage %}
-	<!-- Twitter Open Graph Tags -->
-{% endif %}
+<!-- Twitter Card Tags -->
+<meta name="twitter:card" content="{{ ogImage ? 'summary_large_image' : 'summary' }}">
 {% if ogTitle %}
-	<meta property="twitter:title" content="{{ ogTitle }}">
+	<meta name="twitter:title" content="{{ ogTitle }}">
 {% endif %}
 {% if ogDesc %}
-	<meta property="twitter:description" content="{{ ogDesc }}">
+	<meta name="twitter:description" content="{{ ogDesc }}">
 {% endif %}
 {% if urlData %}
 	<meta name="twitter:url" content="{{ urlData.cleanURL }}">
-	<meta property="twitter:domain" content="{{ urlData.cleanURL }}">
+	<meta name="twitter:domain" content="{{ urlData.cleanURL }}">
 {% endif %}
-{% if ogImage %}
-	<meta name="twitter:card" content="summary_large_image">
-
-	{% if ogImageURL %}
-		<meta name="twitter:image" content="{{ ogImageURL }}?w=1200&h=675&disableWebp=1">
-	{% endif %}
+{% if ogImage and ogImageURL %}
+	<meta name="twitter:image" content="{{ ogImageURL }}?w=1200&h=675&disableWebp=1">
 	{% if ogImageAlt %}
-		<meta name="twitter:image:alt" content="{{ ogImageAlt }}">
+	<meta name="twitter:image:alt" content="{{ ogImageAlt }}">
 	{% endif %}
 {% endif %}
 
 {% set favicon = _ynfinite.site.meta.favicon[0]|default(null) %}
 {% if favicon is not null %}
 <!-- Favicons -->
+	{% if favicon.file_type == 'image/svg+xml' %}
+	<link rel="icon" type="image/svg+xml" href="{{ favicon.path }}">
+	{% endif %}
 	<link rel="icon" type="{{ favicon.file_type }}" sizes="192x192" href="{{ favicon.path }}?w=192&h=192">
 	<link rel="icon" type="{{ favicon.file_type }}" sizes="32x32" href="{{ favicon.path }}?w=32&h=32">
 	<link rel="icon" type="{{ favicon.file_type }}" sizes="96x96" href="{{ favicon.path }}?w=96&h=96">
@@ -152,5 +180,51 @@
 {% if _ynfinite.site.seo.general.google_search_console %}
 	<!-- Google Site Verification -->
 	<meta name="google-site-verification" content="{{_ynfinite.site.seo.general.google_search_console}}" />
+{% endif %}
+
+<!-- Updated/Modified -->
+{% set updatedDates = [
+	_ynfinite.site.updated_at|default(null),
+	_ynfinite.page.updated_at|default(null),
+	_ynfinite.content.updated_at|default(null)
+] %}
+{% if _ynfinite.page.sections|default([]) %}
+	{% for section in _ynfinite.page.sections %}
+		{% set updatedDates = updatedDates|merge([section.updated_at|default(null)]) %}
+	{% endfor %}
+{% endif %}
+{% set latestUpdate = updatedDates|filter(d => d is not null)|reduce((carry, item) => item > carry ? item : carry, null) %}
+{% if latestUpdate %}
+	<meta name="last-modified" content="{{ latestUpdate|date('Y-m-d\\TH:i:sP') }}">
+{% endif %}
+
+<!-- Theme Color -->
+{% if themeColor %}
+	<meta name="theme-color" content="{{ themeColor }}">
+	<meta name="msapplication-TileColor" content="{{ themeColor }}">
+{% endif %}
+
+<!-- Color Scheme -->
+{% if colorScheme is defined %}
+	<meta name="color-scheme" content="{{ colorScheme }}">
+{% endif %}
+
+<!-- Apple Mobile Web App -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+{% if _ynfinite.site.meta.title %}
+<meta name="apple-mobile-web-app-title" content="{{ _ynfinite.site.meta.title }}">
+{% endif %}
+
+<!-- Hreflang Tags -->
+{% if _ynfinite.languages.available and urlData %}
+	{% for lang in _ynfinite.languages.available %}
+		{% set langUrl = lang.url|default(urlData.cleanURL) %}
+		<link rel="alternate" hreflang="{{ lang.code }}" href="{{ langUrl }}">
+	{% endfor %}
+	{# Add x-default for international targeting #}
+	{% if _ynfinite.languages.default %}
+	<link rel="alternate" hreflang="x-default" href="{{ _ynfinite.languages.default.url|default(urlData.cleanURL) }}">
+	{% endif %}
 {% endif %}
 

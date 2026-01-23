@@ -14,16 +14,16 @@
     {% set _yn_tracking_tel = _ynfinite.site.seo.events.clickTelLink %}
 
     <script>
-        window._yn_pageViewEvents = []
-        window._yn_scrollEvents = []
-        window._yn_videoEvents = []
-        window._yn_formEvents = []
-        window._yn_linkEvents = []
+        window._yn_pageViewEvents = window._yn_pageViewEvents || []
+        window._yn_scrollEvents = window._yn_scrollEvents || []
+        window._yn_videoEvents = window._yn_videoEvents || []
+        window._yn_formEvents = window._yn_formEvents || []
+        window._yn_linkEvents = window._yn_linkEvents || []
     </script>
 
     {% for _yn_tracking_tool in _yn_tracking_tools %}
         {% if _yn_tracking_tool.type %}
-            {% include "yn/layout/includes/tracking/" ~ _yn_tracking_tool.type|raw ~ ".twig" %}
+            {% include "yn/layout/includes/tracking/" ~ (_yn_tracking_tool.type|raw) ~ ".twig" %}
         {% endif %}
     {% endfor %}
 {% endif %}

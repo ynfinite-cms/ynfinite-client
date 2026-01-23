@@ -34,8 +34,20 @@ final class RenderSitemapService
     }
 
     public function render($sitemap) {
-        $renderedSitemap = $this->twig->render("yn/module/sitemap/index.twig", array("sitemap" => $sitemap));
-        return $renderedSitemap;
+        // Handle the wrapped structure from GetSitemapService
+        if (isset($sitemap['isIndex']) && isset($sitemap['entries'])) {
+            // Determine which template to use
+            $template = $sitemap['isIndex'] 
+                ? "yn/module/sitemap/sitemap_index.twig" 
+                : "yn/module/sitemap/index.twig";
+            
+            $variableName = $sitemap['isIndex'] ? "sitemaps" : "sitemap";
+            
+            return $this->twig->render($template, [$variableName => $sitemap['entries']]);
+        }
+
+        // Fallback for flat array structure (if backend behavior changes)
+        return $this->twig->render("yn/module/sitemap/index.twig", ["sitemap" => $sitemap]);
     }
 
 }

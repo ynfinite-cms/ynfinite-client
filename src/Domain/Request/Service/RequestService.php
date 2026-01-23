@@ -70,12 +70,12 @@ class RequestService {
         if (empty($referer)) {
             return $fallback;
         }
-        
+
         // Check if referer is a valid URI with http or https schema
         if (filter_var($referer, FILTER_VALIDATE_URL) && preg_match('/^https?:\\/\\//i', $referer)) {
             return $referer;
         }
-        
+
         // Fallback to the constructed URL if referer is invalid
         return $fallback;
     }

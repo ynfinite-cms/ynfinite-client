@@ -6,7 +6,7 @@
 {% if _yn_retargeting and _yn_retargeting_tools and ('localhost' not in _ynfinite.currentDomain or _yn_seo_debug) %}
     {% for _yn_retargeting_tool in _yn_retargeting_tools %}
         {% if _yn_retargeting_tool.type %}
-            {% include "yn/layout/includes/retargeting/" ~ _yn_retargeting_tool.type|raw ~ ".twig" %}
+            {% include "yn/layout/includes/retargeting/" ~ (_yn_retargeting_tool.type|raw) ~ ".twig" %}
         {% endif %}
     {% endfor %}
 {% endif %}
