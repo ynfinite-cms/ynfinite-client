@@ -172,8 +172,6 @@
 				
 					window._yn_videoEvents.push(_yn_videoTracking);
 				{% endif %}
-					window._yn_videoEvents.push(_yn_videoTracking);
-				{% endif %}
 
 				{% if _yn_tracking_external or _yn_tracking_downloads or _yn_tracking_email or _yn_tracking_tel %}
 					const _yn_linkTracking = (_yn_eventName = 'click', _yn_url) => {
@@ -194,9 +192,7 @@
 					}
 					window._yn_linkEvents.push(_yn_linkTracking)
 				{% endif %}
-						gtag('event', _yn_eventName, params);
-					}
-					window._yn_linkEvents.push(_yn_linkTracking)
+
 				{% if _yn_tracking_pageScroll %}
 					const _yn_scrollTracking = (_yn_name, _yn_depth) => {
 						if(!window._yn_skipGoogleAnalyticsScroll){
@@ -215,12 +211,6 @@
 
 							gtag('event', _yn_eventName, params);
 						}
-					}
-					window._yn_scrollEvents.push(_yn_scrollTracking)
-				{% endif %} { ...params, ...window._yn_googleAnalyticsParams }
-						}
-
-						gtag('event', _yn_eventName, params);
 					}
 					window._yn_scrollEvents.push(_yn_scrollTracking)
 				{% endif %}

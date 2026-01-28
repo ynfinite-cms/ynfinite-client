@@ -1,4 +1,5 @@
 {% set randomKey = random(0, 999999999) %}
+{% set aspectRatio = orientation|default('horizontal') == 'vertical' ? '9/16' : '16/9' %}
 
 {% if '?' in id %}
     {% set id = id|split('?')[0] %}
@@ -11,7 +12,7 @@
             {% set attributes = 'rel="0" modestbranding="0" frameborder="0" allowfullscreen allow="fullscreen; picture-in-picture"' %}
         {% endif %}
 
-        <div class="yn-video" id="yn-video-youtube-{{randomKey}}" style="background-image: url('https://i.ytimg.com/vi/{{ id }}/sddefault.jpg'); aspect-ratio: 16/9; width: 100%; height: auto; background-size: cover; background-position: center;"></div>
+        <div class="yn-video" id="yn-video-youtube-{{randomKey}}" style="background-image: url('https://i.ytimg.com/vi/{{ id }}/sddefault.jpg'); aspect-ratio: {{ aspectRatio }}; width: 100%; height: auto; background-size: cover; background-position: center;"></div>
         <script>
             // Try to load highest quality thumbnail (maxresdefault), fallback to sddefault
             const getThumbnailUrl = (videoId) => {

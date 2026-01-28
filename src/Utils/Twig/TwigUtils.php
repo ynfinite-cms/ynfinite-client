@@ -645,6 +645,7 @@ class TwigUtils
             'height' => $options['height'] ?? '',
             'width' => $options['width'] ?? '',
             'parameter' => $options['parameter'] ?? "",
+            'orientation' => $options['orientation'] ?? 'horizontal',
             'options' => $options
         ]);
     }
