@@ -6,6 +6,7 @@ import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import chokidar from 'chokidar'
 import { WebSocket } from 'ws'
+import { readdirSync } from 'fs'
 
 const require = createRequire(import.meta.url)
 const __filename = fileURLToPath(import.meta.url)
@@ -14,12 +15,30 @@ const __dirname = dirname(__filename)
 const sass = require('sass')
 const autoprefixer = require('autoprefixer')
 const postcss = require('postcss')
-
-// SCSS files to compile
-const scssFiles = ['brycks_classic', 'brycks_modern', 'brycks_premium', 'brycks_rounded', 'brycks_tiles', 'fontawesome']
-
 const inputDir = resolve(__dirname, '../development/assets/scss')
 const outputDir = resolve(__dirname, '../public/assets/css')
+
+// Dynamically detect SCSS files to compile
+function getAvailableScssFiles() {
+	const scssFiles = []
+	
+	try {
+		const files = readdirSync(inputDir)
+		for (const file of files) {
+			if (file.endsWith('.scss') && !file.startsWith('_')) {
+				const name = file.replace('.scss', '')
+				scssFiles.push(name)
+			}
+		}
+		console.log(`📋 Found SCSS files: ${scssFiles.join(', ')}`)
+	} catch (error) {
+		console.error('❌ Error reading SCSS directory:', error.message)
+	}
+	
+	return scssFiles
+}
+
+const scssFiles = getAvailableScssFiles()
 
 // Hot reload WebSocket connection
 let hotReloadWs = null
@@ -89,8 +108,8 @@ async function compileSCSS(filename) {
 								const shouldSuppress = message.includes('Sass @import rules are deprecated') || message.includes('Global built-in functions are deprecated') || message.includes('repetitive deprecation warnings omitted') || isFromFontAwesome
 
 								if (!shouldSuppress) {
-									const fileName = url ? ` (${url.split('/').pop()})` : ''
-									console.warn(`⚠️  SCSS${fileName}:`, message.split('\n')[0])
+									const fileName = url ? ` (${url.split('/' ).pop()})` : ''
+									console.warn(`⚠️  SCSS${fileName}:`, message.split('\n' )[0])
 								}
 							} catch (error) {
 								// If there's any error in the logger, just suppress the warning
@@ -103,7 +122,7 @@ async function compileSCSS(filename) {
 		// Process with PostCSS/Autoprefixer
 		const processed = await postcss([
 			autoprefixer({
-				overrideBrowserslist: ['last 2 versions', '> 1%', 'not dead'],
+				overrideBrowserslist: ['last 2 versions', '>1%', 'not dead'],
 			}),
 		]).process(result.css, {
 			from: inputFile,
@@ -151,7 +170,7 @@ function startWatcher() {
 
 	watcher.on('change', async (filePath) => {
 		// Determine which main SCSS file to recompile
-		const changedFile = filePath.replace(inputDir, '').replace(/\\/g, '/').substring(1)
+		const changedFile = filePath.replace(inputDir, '').replace(/\\/g, '/' ).substring(1)
 
 		// If it's a main file, compile just that one
 		for (const file of scssFiles) {
