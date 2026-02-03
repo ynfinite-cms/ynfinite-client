@@ -467,7 +467,7 @@ function checkScreen() {
 }
 
 function createCaptcha(form) {
-	const formPage = form.querySelector('.yn-form-page')
+	const formPage = form.querySelector('.yn-form-page:last-of-type')
 
 	const row = document.createElement('div')
 	row.classList.add('yn-form-grid-row')
