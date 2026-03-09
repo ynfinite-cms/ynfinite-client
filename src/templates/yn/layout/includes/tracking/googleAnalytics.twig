@@ -172,8 +172,6 @@
 				
 					window._yn_videoEvents.push(_yn_videoTracking);
 				{% endif %}
-					window._yn_videoEvents.push(_yn_videoTracking);
-				{% endif %}
 
 				{% if _yn_tracking_external or _yn_tracking_downloads or _yn_tracking_email or _yn_tracking_tel %}
 					const _yn_linkTracking = (_yn_eventName = 'click', _yn_url) => {
