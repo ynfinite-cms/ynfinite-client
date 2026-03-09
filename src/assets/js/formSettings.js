@@ -56,7 +56,7 @@ const YnfiniteFormSettings = {
 		}
 
 		forms.forEach((form) => {
-			const groups = Array.from(form.querySelectorAll('.form-content .yn-form-page'))
+			const groups = Array.from(form.querySelectorAll('.form-content .yn-form-page:not(.hiddenFieldWrapper)'))
 
 			if (groups.length > 1) {
 				let activeIndex = 1
