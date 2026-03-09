@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { readdirSync } from 'fs'
 
 export default defineConfig({
 	root: './development/assets',
@@ -9,18 +10,28 @@ export default defineConfig({
 		outDir: '../../public/assets',
 		emptyOutDir: false,
 		sourcemap: true,
-		lib: false, // Ensure we're building an app, not a library
+		lib: false,
 
 		rollupOptions: {
-			input: {
-				// JavaScript Entry Points
-				brycks_classic: resolve(process.cwd(), 'development/assets/js/brycks_classic.js'),
-				brycks_modern: resolve(process.cwd(), 'development/assets/js/brycks_modern.js'),
-				brycks_premium: resolve(process.cwd(), 'development/assets/js/brycks_premium.js'),
-				brycks_rounded: resolve(process.cwd(), 'development/assets/js/brycks_rounded.js'),
-				brycks_tiles: resolve(process.cwd(), 'development/assets/js/brycks_tiles.js'),
-				themes: resolve(process.cwd(), 'development/assets/js/themes.js'),
-			},
+			input: (() => {
+				const jsDir = resolve(process.cwd(), 'development/assets/js')
+				const input = {}
+				
+				try {
+					const files = readdirSync(jsDir)
+					for (const file of files) {
+						if (file.endsWith('.js') && !file.startsWith('_')) {
+							const name = file.replace('.js', '')
+							input[name] = resolve(process.cwd(), `development/assets/js/${file}`)
+						}
+					}
+					console.log(`📋 Found JS entry points: ${Object.keys(input).join(', ')}`)
+				} catch (error) {
+					console.error('❌ Error reading JS directory:', error.message)
+				}
+				
+				return input
+			})(),
 
 			output: {
 				entryFileNames: 'js/[name].js',

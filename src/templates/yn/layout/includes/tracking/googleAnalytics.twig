@@ -192,9 +192,7 @@
 					}
 					window._yn_linkEvents.push(_yn_linkTracking)
 				{% endif %}
-						gtag('event', _yn_eventName, params);
-					}
-					window._yn_linkEvents.push(_yn_linkTracking)
+
 				{% if _yn_tracking_pageScroll %}
 					const _yn_scrollTracking = (_yn_name, _yn_depth) => {
 						if(!window._yn_skipGoogleAnalyticsScroll){
@@ -213,12 +211,6 @@
 
 							gtag('event', _yn_eventName, params);
 						}
-					}
-					window._yn_scrollEvents.push(_yn_scrollTracking)
-				{% endif %} { ...params, ...window._yn_googleAnalyticsParams }
-						}
-
-						gtag('event', _yn_eventName, params);
 					}
 					window._yn_scrollEvents.push(_yn_scrollTracking)
 				{% endif %}

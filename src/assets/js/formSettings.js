@@ -71,8 +71,9 @@ const YnfiniteFormSettings = {
 				})
 
 				// move consents in last group
-				groups[groups.length - 1].appendChild(consents)
-
+				if (consents) {
+					groups[groups.length - 1].appendChild(consents)
+				}
 				// temp remove submitButtons
 				form.querySelectorAll('[type=submit]:not([tabindex="-1"], [type="hidden"], .hidden)').forEach((btn) => {
 					btn.remove()
@@ -143,7 +144,9 @@ const YnfiniteFormSettings = {
 
 				// first group render
 				rerenderGroups(groups, activeIndex, groups.length, submitButtons, prevButton, nextButton, true)
-				consents.style.display = ''
+				if (consents) {
+					consents.style.display = ''
+				}
 			}
 		})
 	},

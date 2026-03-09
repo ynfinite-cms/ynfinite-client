@@ -11,7 +11,7 @@ class YnfiniteException extends \Exception
     private $redirect = null;
     private $renderType = "error";
 
-    public function __construct($message, $code = 0, $pipeBody = false, $path = "/", \Exception $previous = null)
+    public function __construct($message, $code = 0, $pipeBody = false, $path = "/", ?\Exception $previous = null)
     {
         $this->code = $code;
 
