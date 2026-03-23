@@ -47,8 +47,9 @@ final class SendFormService extends RequestService
         }
         else if(in_array($statusCode, [301, 302, 307, 308], true)){
             // Redirect
-            if(isset($body["loginToken"]) && strlen($body["loginToken"] > 0)){
+            if(isset($body["loginToken"]) && strlen($body["loginToken"]) > 0){
                 $_SESSION["loginToken"] = $body["loginToken"];
+                setcookie('leadGroupIds', 'empty', time() + (86400 * 30), "/");
             };
             return array("type" => 'redirect', "statusCode" => $statusCode, "url" => $body["url"]);
         } else {
