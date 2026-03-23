@@ -29,7 +29,7 @@ async function buildAssets() {
 	try {
 		// Build CSS files
 		console.log('🎨 Building SCSS files...')
-		await runCommand('node', ['scripts/build-css.mjs'])
+		await runCommand('node', ['scripts/build-css.mjs', '--minify'])
 
 		// Build JavaScript files
 		console.log('📦 Building JavaScript files...')

@@ -89,6 +89,9 @@ function getHotReloadScript() {
       case 'full-reload':
         handleFullReload(data);
         break;
+      case 'build-error':
+        showNotification(\`❌ \${data.language.toUpperCase()} error in \${data.file}: \${data.message.split('\\n')[0]}\`, true);
+        break;
     }
   }
   
@@ -160,7 +163,7 @@ function getHotReloadScript() {
   }
   
   // Clean notification system
-  function showNotification(message) {
+  function showNotification(message, isError = false) {
     const id = 'hot-reload-notification';
     let notification = document.getElementById(id);
     
@@ -170,7 +173,7 @@ function getHotReloadScript() {
     notification.id = id;
     notification.textContent = message;
     notification.style.cssText = 
-      'position:fixed;top:20px;right:20px;background:#4CAF50;color:white;' +
+      'position:fixed;top:20px;right:20px;background:' + (isError ? '#f44336' : '#4CAF50') + ';color:white;' +
       'padding:8px 12px;border-radius:6px;z-index:1000000;font-size:13px;' +
       'font-family:-apple-system,BlinkMacSystemFont,sans-serif;' +
       'box-shadow:0 2px 10px rgba(0,0,0,0.2);' +
@@ -187,7 +190,7 @@ function getHotReloadScript() {
         notification.style.transform = 'translateX(100%)';
         setTimeout(() => notification.remove(), 200);
       }
-    }, 1800);
+    }, isError ? 4000 : 1800);
   }
   
   // Initialize
@@ -220,6 +223,27 @@ async function initializeServer() {
 		clients.add(ws)
 		console.log('🔗 Browser connected')
 
+		ws.on('message', (message) => {
+			try {
+				const data = JSON.parse(message)
+				if (data.type === 'css') {
+					// Direct notification from build-css.mjs
+					handleCSSChange(data.file)
+				} else if (data.type === 'error') {
+					// Broadcast error to browser
+					broadcast({
+						type: 'build-error',
+						language: 'css',
+						file: data.file.file,
+						message: data.file.message,
+					})
+					console.log(`❌ CSS Build Error in ${data.file.file}: ${data.file.message.split('\n')[0]}`)
+				}
+			} catch (e) {
+				// Ignore non-json messages
+			}
+		})
+
 		ws.on('close', () => {
 			clients.delete(ws)
 			console.log('📱 Browser disconnected')
@@ -238,31 +262,22 @@ async function initializeServer() {
 
 	// Smart CSS change handling - only track files that actually changed
 	function handleCSSChange(filePath) {
-		const now = Date.now()
 		const fileName = getCleanFileName(filePath)
-		changedCSSFiles.set(filePath, now)
+		changedCSSFiles.set(filePath, Date.now())
 
 		clearTimeout(cssChangeTimeout)
 		cssChangeTimeout = setTimeout(() => {
-			const changes = Array.from(changedCSSFiles.entries())
+			const changes = Array.from(changedCSSFiles.keys())
 
 			broadcast({
 				type: 'css-update',
-				changes: changes.map(([file, timestamp]) => ({
-					file: file,
-					timestamp: timestamp,
-				})),
-				batchTimestamp: now,
+				changes: changes.map((file) => ({ file })),
+				batchTimestamp: Date.now(),
 			})
 
-			if (changes.length === 1) {
-				console.log(`🎨 ${getCleanFileName(changes[0][0])}`)
-			} else {
-				console.log(`🎨 ${changes.length} CSS files updated`)
-			}
-
+			console.log(`🎨 ${changes.length > 1 ? `${changes.length} styles` : getCleanFileName(changes[0])} updated`)
 			changedCSSFiles.clear()
-		}, 200) // Shorter batch window for speed
+		}, 100)
 	}
 
 	// Handle full page reloads
@@ -346,20 +361,21 @@ async function initializeServer() {
 		cwd: resolve(__dirname, '..'),
 	})
 
-	// Handle watcher output - only show important messages
-	cssWatcher.stdout.on('data', (data) => {
-		const output = data.toString()
-		if (output.includes('error') || output.includes('Error')) {
-			console.log('❌ CSS Build Error:', output.trim())
+	// Handle watcher output - pipe through directly with warning filters
+	const filterWarnings = (data, stream) => {
+		const str = data.toString()
+		// Filter out common deprecation noise from child processes
+		if (str.includes('Deprecation Warning') || str.includes('Sass @import rules are deprecated') || str.includes('Global built-in functions are deprecated') || str.includes('repetitive deprecation warnings omitted')) {
+			return
 		}
-	})
+		stream.write(data)
+	}
 
-	jsWatcher.stdout.on('data', (data) => {
-		const output = data.toString()
-		if (output.includes('error') || output.includes('Error')) {
-			console.log('❌ JS Build Error:', output.trim())
-		}
-	})
+	cssWatcher.stdout.on('data', (d) => filterWarnings(d, process.stdout))
+	cssWatcher.stderr.on('data', (d) => filterWarnings(d, process.stderr))
+
+	jsWatcher.stdout.on('data', (d) => filterWarnings(d, process.stdout))
+	jsWatcher.stderr.on('data', (d) => filterWarnings(d, process.stderr))
 
 	process.on('SIGINT', () => {
 		console.log('\n👋 Shutting down hot reload server...')

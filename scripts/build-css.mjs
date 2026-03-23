@@ -21,7 +21,7 @@ const outputDir = resolve(__dirname, '../public/assets/css')
 // Dynamically detect SCSS files to compile
 function getAvailableScssFiles() {
 	const scssFiles = []
-	
+
 	try {
 		const files = readdirSync(inputDir)
 		for (const file of files) {
@@ -34,7 +34,7 @@ function getAvailableScssFiles() {
 	} catch (error) {
 		console.error('❌ Error reading SCSS directory:', error.message)
 	}
-	
+
 	return scssFiles
 }
 
@@ -62,10 +62,13 @@ function connectHotReload() {
 
 function notifyHotReload(type, file) {
 	if (hotReloadWs && hotReloadWs.readyState === WebSocket.OPEN) {
+		// Just send the data as is - if file is an object, send it; if string, clean it
+		const cleanFile = typeof file === 'string' ? file.replace(process.cwd(), '') : file
+
 		hotReloadWs.send(
 			JSON.stringify({
 				type,
-				file: file.replace(process.cwd(), ''),
+				file: cleanFile,
 				timestamp: Date.now(),
 			})
 		)
@@ -85,70 +88,32 @@ async function compileSCSS(filename) {
 	const outputFile = join(outputDir, `${filename}.css`)
 
 	try {
-		console.log(`🎨 Compiling ${filename}.scss...`)
-
-		// Compile SCSS with suppressed warnings
 		const result = sass.compile(inputFile, {
 			sourceMap: true,
-			style: 'expanded',
+			style: isMinify ? 'compressed' : 'expanded',
 			loadPaths: [resolve(__dirname, '../node_modules'), resolve(__dirname, '../development/assets/scss')],
 			quietDeps: true,
-			// Control warning verbosity based on command line args
-			verbose: showWarnings,
-			logger: showWarnings
-				? undefined
-				: {
-						warn(message, options) {
-							try {
-								// Check if the warning is from FontAwesome (third-party) files
-								const url = options?.span?.url?.toString() || ''
-								const isFromFontAwesome = url.includes('_fontawesome') || url.includes('fontawesome.scss')
-
-								// Suppress common deprecation warnings, especially from third-party libraries
-								const shouldSuppress = message.includes('Sass @import rules are deprecated') || message.includes('Global built-in functions are deprecated') || message.includes('repetitive deprecation warnings omitted') || isFromFontAwesome
-
-								if (!shouldSuppress) {
-									const fileName = url ? ` (${url.split('/' ).pop()})` : ''
-									console.warn(`⚠️  SCSS${fileName}:`, message.split('\n' )[0])
-								}
-							} catch (error) {
-								// If there's any error in the logger, just suppress the warning
-							}
-						},
-						debug: () => {},
-				  },
+			fatalDeprecations: [],
+			silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'mixed-decls'],
+			logger: showWarnings ? undefined : { warn: () => {}, debug: () => {} },
 		})
 
-		// Process with PostCSS/Autoprefixer
-		const processed = await postcss([
-			autoprefixer({
-				overrideBrowserslist: ['last 2 versions', '>1%', 'not dead'],
-			}),
-		]).process(result.css, {
+		const processed = await postcss([autoprefixer({ overrideBrowserslist: ['last 2 versions', '>1%', 'not dead'] })]).process(result.css, {
 			from: inputFile,
 			to: outputFile,
 			map: { prev: result.sourceMap },
 		})
 
-		// Ensure output directory exists
 		await ensureDir(outputDir)
-
-		// Write CSS file
 		await writeFile(outputFile, processed.css)
+		if (processed.map) await writeFile(`${outputFile}.map`, processed.map.toString())
 
-		// Write source map
-		if (processed.map) {
-			await writeFile(`${outputFile}.map`, processed.map.toString())
-		}
+		console.log(`✅ ${filename}.css${isMinify ? ' (minified)' : ''}`)
 
-		console.log(`✅ Compiled ${filename}.css`)
-
-		// Notify hot reload if enabled
-		if (isHotReload) {
-			notifyHotReload('css', outputFile)
-		}
+		if (isHotReload) notifyHotReload('css', outputFile)
 	} catch (error) {
-		console.error(`❌ Error compiling ${filename}.scss:`, error.message)
+		console.error(`❌ ${filename}.scss:`, error.message)
+		if (isHotReload) notifyHotReload('error', { file: filename, message: error.message })
 	}
 }
 
@@ -170,7 +135,7 @@ function startWatcher() {
 
 	watcher.on('change', async (filePath) => {
 		// Determine which main SCSS file to recompile
-		const changedFile = filePath.replace(inputDir, '').replace(/\\/g, '/' ).substring(1)
+		const changedFile = filePath.replace(inputDir, '').replace(/\\/g, '/').substring(1)
 
 		// If it's a main file, compile just that one
 		for (const file of scssFiles) {
@@ -200,6 +165,7 @@ const args = process.argv.slice(2)
 const isWatch = args.includes('--watch') || args.includes('-w')
 const showWarnings = args.includes('--verbose') || args.includes('-v')
 const isHotReload = args.includes('--hot')
+const isMinify = args.includes('--minify') || args.includes('-m') || isWatch || isHotReload
 
 // Connect to hot reload if enabled
 if (isHotReload) {
