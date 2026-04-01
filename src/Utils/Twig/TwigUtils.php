@@ -685,6 +685,7 @@ class TwigUtils
             'height' => $options['height'] ?? '',
             'width' => $options['width'] ?? '',
             'parameter' => $options['parameter'] ?? "",
+            'orientation' => $options['orientation'] ?? 'horizontal',
             'options' => $options
         ]);
     }
@@ -700,6 +701,7 @@ class TwigUtils
     public function languageSwitch($context, $options = []) {
         return $this->twig->render($this->getTemplate('languages:languageSwitch'), [
             'noPopup' => $options['noPopup'] ?? false,
+            'showFlag' => $options['showFlag'] ?? true,
             'options' => $options
         ]);
     }
