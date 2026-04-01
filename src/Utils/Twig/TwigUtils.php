@@ -543,6 +543,48 @@ class TwigUtils
         return "";
     }
 
+    public function articleTextContent($context, $article, $options = []) {
+        if (!$article) return "";
+
+        $text_blocks = array_values(array_filter($article, function ($i) {
+            return ($i['type'] == 'introText' or $i['type'] == 'text' or $i['type'] == 'headline');
+        }));
+
+        $all_content_parts = [];
+        
+        $pattern = '/<(p|h[1-6]|li)\b[^>]*>(.*?)<\/\1>/isu';
+
+        foreach ($text_blocks as $block) {
+            if (empty($block['value'])) continue;
+
+            $content = $block['value'];
+
+
+            if (preg_match_all($pattern, $content, $matches)) {
+                foreach ($matches[2] as $text) {
+                    $cleanText = trim(strip_tags($text));
+                    if ($cleanText !== '') {
+                        $all_content_parts[] = $cleanText;
+                    }
+                }
+            } else {
+                $fallback = trim(strip_tags($content));
+                if ($fallback !== '') {
+                    $all_content_parts[] = $fallback;
+                }
+            }
+        }
+
+        if (empty($all_content_parts)) return null;
+
+        $combined = implode(" ", $all_content_parts);
+        $decoded = html_entity_decode($combined, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        $finalClean = preg_replace('/\s+/', ' ', $decoded);
+        
+        return trim($finalClean);
+    }
+
     public function teaserHeading($context, $article, $options = []) {
         if($article && is_array($article)){
             $heading = array_filter($article, function ($i) {return is_array($i) && isset($i['type']) && ($i['type'] == 'headline');});
@@ -609,16 +651,14 @@ class TwigUtils
 
     public function asTemplate($context, $template, $options = []) {
         if($template){
-            $env = new Environment(new ArrayLoader());
-            $template = $env->createTemplate($template);
-            if(array_key_exists('data', $options) && !empty($options['data'])) {
-                return $env->render($template, $options['data']);
-            }
-            else {
-                return $env->render($template, $context);
-            }
-        };
+            $tpl = $this->twig->createTemplate($template);
+            $data = (array_key_exists('data', $options) && !empty($options['data']))
+                ? $options['data']
+                : $context;
+            return $tpl->render($data);
+        }
     }
+
 
     public function form($context, $form, $options = []) {
         $this->currentForm = $form;
@@ -645,7 +685,6 @@ class TwigUtils
             'height' => $options['height'] ?? '',
             'width' => $options['width'] ?? '',
             'parameter' => $options['parameter'] ?? "",
-            'orientation' => $options['orientation'] ?? 'horizontal',
             'options' => $options
         ]);
     }
@@ -661,7 +700,6 @@ class TwigUtils
     public function languageSwitch($context, $options = []) {
         return $this->twig->render($this->getTemplate('languages:languageSwitch'), [
             'noPopup' => $options['noPopup'] ?? false,
-            'showFlag' => $options['showFlag'] ?? true,
             'options' => $options
         ]);
     }
