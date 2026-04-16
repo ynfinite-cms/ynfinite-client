@@ -16,13 +16,13 @@
 		}
 	],
 	"require": {
-		"php": "^7.4 || ^8.0",
+		"php": "^8.0",
 		"ext-json": "*",
 		"bryanjhv/slim-session": "^4.1.2",
 		"cocur/slugify": "^4.2.0",
 		"curl/curl": "^2.3",
-		"illuminate/database": "^9.32",
-		"monolog/monolog": "1.25.3",
+		"illuminate/database": "^9.32 || ^10.0 || ^11.0",
+		"monolog/monolog": "^1.25 || ^2.0 || ^3.0",
 		"php-di/php-di": "^6.4.0",
 		"slim/psr7": "^1.5.0",
 		"slim/slim": "^4.10.0",
