@@ -82,6 +82,8 @@ class StaticCache
             } else {
                 $name = $leadGroupIds;
             }
+        } elseif (isset($_COOKIE['loginToken'])) {
+            $name = 'loggedin';
         }
         
         $filename = "$dirname/$name.html";

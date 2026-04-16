@@ -36,13 +36,17 @@ final class RenderPageAction
             }
 
             if (isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] == '/logout') {
+                $expires = time() - 3600;
                 if (isset($_COOKIE['leadGroupIds'])) {
-                    $expires = time() - 3600;
                     setcookie('leadGroupIds', '', $expires, '/');
-                    setcookie('ynfinite-session', '', $expires, '/');
                     unset($_COOKIE['leadGroupIds']);
-                    unset($_COOKIE['ynfinite-session']);
                 }
+                if (isset($_COOKIE['loginToken'])) {
+                    setcookie('loginToken', '', $expires, '/');
+                    unset($_COOKIE['loginToken']);
+                }
+                setcookie('ynfinite-session', '', $expires, '/');
+                unset($_COOKIE['ynfinite-session']);
                 header('Location: /');
                 die();
             }
@@ -89,6 +93,10 @@ final class RenderPageAction
                 if (isset($data['data']['leadGroupIds'])) {
                     $leadGroupIds = $data['data']['leadGroupIds'];
                     setcookie('leadGroupIds', $leadGroupIds, time() + (86400 * 30), "/");
+                    $_COOKIE['leadGroupIds'] = $leadGroupIds;
+                } elseif (isset($data['data']['user']) && !isset($_COOKIE['leadGroupIds'])) {
+                    setcookie('leadGroupIds', 'empty', time() + (86400 * 30), "/");
+                    $_COOKIE['leadGroupIds'] = 'empty';
                 }
                 if (isset($_COOKIE["loginToken"])) {
                     $_SESSION["loginToken"] = $_COOKIE["loginToken"];
