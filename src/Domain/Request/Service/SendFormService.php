@@ -33,6 +33,13 @@ final class SendFormService extends RequestService
         if($postBody['method'] === "post" && !$this->securityCheck($request)) {
             return $this->securityError;
         }
+
+        if($postBody['method'] === "post" && !$this->validateRequiredFields($request)) {
+            return array(
+                "type"    => 'error',
+                'message' => 'Please fill in all required fields.'
+            );
+        }
         
         $this->checkPostProof($request);
 
@@ -56,6 +63,65 @@ final class SendFormService extends RequestService
             // Error
             return array("type" => 'error', 'message' => $body["message"]);
         }
+    }
+
+    /**
+     * Verifies the server-signed required-fields token and checks that every
+     * field it lists is present and non-empty in the submitted POST data.
+     * If no token is present the check is skipped (backwards-compatible with
+     * old cached pages that were rendered without the token).
+     */
+    private function validateRequiredFields(ServerRequestInterface $request): bool
+    {
+        $body = $request->getParsedBody();
+        $token = $body['yn_required_fields_token'] ?? '';
+
+        if (empty($token)) {
+            return true;
+        }
+
+        $raw = base64_decode($token, true);
+        if ($raw === false) {
+            return false;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || !isset($decoded['p'], $decoded['s'])) {
+            return false;
+        }
+
+        $secret      = $this->settings['auth']['api_key'] ?? '';
+        $expectedSig = hash_hmac('sha256', $decoded['p'], $secret);
+
+        if (!hash_equals($expectedSig, $decoded['s'])) {
+            return false;
+        }
+
+        $payload = json_decode($decoded['p'], true);
+        if (!is_array($payload) || empty($payload['fields'])) {
+            return false;
+        }
+
+        // Verify the token belongs to the form being submitted
+        $submittedFormId = $body['formId'] ?? '';
+        if (!empty($payload['formId']) && $payload['formId'] !== $submittedFormId) {
+            return false;
+        }
+
+        $fields = $body['fields'] ?? [];
+        foreach ($payload['fields'] as $alias) {
+            $value = $fields[$alias] ?? '';
+            if (is_array($value)) {
+                $filled = array_filter($value, fn($v) => trim((string)$v) !== '');
+                if (empty($filled)) {
+                    return false;
+                }
+            } elseif (trim((string)$value) === '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function securityCheck($request) 

@@ -124,6 +124,47 @@ final class TwigRenderer
 
         $this->twig->addFunction($_yfunc);
 
+        // Generates a server-signed token listing all required field aliases for a form.
+        // PHP can then verify this token on submission and enforce required fields
+        // even if the HTML 'required' attribute was removed via browser DevTools.
+        $_yn_required_fields_token = new \Twig\TwigFunction('_yn_required_fields_token', function ($context, $form) {
+            if (!is_array($form) || empty($form['groups'])) {
+                return '';
+            }
+
+            $requiredAliases = [];
+            foreach ($form['groups'] as $group) {
+                foreach ($group['fields'] ?? [] as $row) {
+                    foreach ($row as $field) {
+                        if (!empty($field['required']) && !empty($field['alias'])) {
+                            $requiredAliases[] = $field['alias'];
+                        }
+                    }
+                }
+            }
+
+            if (empty($requiredAliases)) {
+                return '';
+            }
+
+            $payload = json_encode([
+                'formId' => $form['_id'] ?? '',
+                'fields' => $requiredAliases,
+                'ts'     => time(),
+            ]);
+
+            $secret = $this->settings['ynfinite']['auth']['api_key'] ?? '';
+            $sig    = hash_hmac('sha256', $payload, $secret);
+
+            return htmlspecialchars(
+                base64_encode(json_encode(['p' => $payload, 's' => $sig])),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+        }, ['is_safe' => ['html'], 'needs_context' => true]);
+
+        $this->twig->addFunction($_yn_required_fields_token);
+
         $filterTrans = new \Twig\TwigFilter('trans', function ($string) {
             $i18n = new I18nUtils($this->twig, $this->data);
             return $i18n->translate($string);
