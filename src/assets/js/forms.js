@@ -1,9 +1,10 @@
 import { load } from '@fingerprintjs/botd'
 
-const debug = false
+const debug = true
 const renderedKey = Math.random().toString(36).substring(2)
 const focusedElements = []
 const defaultValueFields = []
+const requiredFieldNames = new Map() // form element -> array of field names that were required at page load
 let botD = undefined
 let humanMovement = false
 let botScore = 0
@@ -13,6 +14,153 @@ let captchaExists = false
 let captchaCode
 let normalTypingConsistency = true
 let errorCodes = []
+let legitimateRequiredToggle = false
+
+/**
+ * Captures the names of all required fields in each form at page-load time,
+ * before any user or DevTools DOM manipulation can occur.
+ */
+function captureRequiredFields() {
+	const forms = document.querySelectorAll('[data-ynform=true]')
+	forms.forEach((form) => {
+		const fields = form.querySelectorAll(':is(input, select, textarea)[data-ynfield][required]:not([tabindex="-1"], [type="hidden"], .hidden, [name="yn_confirm_name"], [name="consents[]_v2"])')
+		const seen = new Set()
+		const names = []
+		fields.forEach((field) => {
+			const name = field.getAttribute('name')
+			if (name && !seen.has(name)) {
+				seen.add(name)
+				names.push(name)
+			}
+		})
+		requiredFieldNames.set(form, names)
+	})
+}
+
+/**
+ * Watches for required attribute changes on form fields.
+ * If a change happens during a user-initiated event (click/change) it is
+ * treated as a legitimate toggle and the snapshot is updated.
+ * Otherwise it is treated as DevTools tampering and adds to botScore.
+ */
+function setupRequiredFieldObservers() {
+	const setLegitimateFlag = () => {
+		legitimateRequiredToggle = true
+		setTimeout(() => {
+			legitimateRequiredToggle = false
+		}, 0)
+	}
+	document.addEventListener('click', setLegitimateFlag, true)
+	document.addEventListener('change', setLegitimateFlag, true)
+
+	const forms = document.querySelectorAll('[data-ynform=true]')
+	// Defer observer start so any page-load JS that legitimately toggles required
+	// attributes runs first and is not flagged as tampering.
+	setTimeout(() => {
+		forms.forEach((form) => {
+			const observer = new MutationObserver((mutations) => {
+				for (const mutation of mutations) {
+					if (mutation.attributeName !== 'required') continue
+					const field = mutation.target
+					if (!field.matches(':is(input, select, textarea)[data-ynfield]:not([tabindex="-1"], [type="hidden"], .hidden, [name="yn_confirm_name"], [name="consents[]_v2"])')) continue
+
+					const name = field.getAttribute('name')
+					if (!name) continue
+
+					const names = requiredFieldNames.get(form) || []
+
+					if (field.hasAttribute('required')) {
+						// required was added
+						if (!names.includes(name)) {
+							names.push(name)
+							requiredFieldNames.set(form, names)
+						}
+						if (debug) {
+							console.log(`%cRequired added for "${name}" (legitimate: ${legitimateRequiredToggle})`, 'color: blue')
+						}
+					} else {
+						// required was removed
+						if (legitimateRequiredToggle) {
+							const idx = names.indexOf(name)
+							if (idx !== -1) {
+								names.splice(idx, 1)
+								requiredFieldNames.set(form, names)
+							}
+							if (debug) {
+								console.log(`%cRequired removed for "${name}" — legitimate toggle`, 'color: blue')
+							}
+						} else {
+							if (!errorCodes.includes('18')) {
+								botScore += 50
+								errorCodes.push('18')
+								if (debug) {
+									console.log('%cBot detected by required attr tampering (added 50 Score)', 'color: red')
+									console.log('%cNew Botscore: ' + botScore, `color: ${botScore >= 100 ? 'red' : 'yellow'}`)
+								}
+							}
+						}
+					}
+				}
+			})
+
+			observer.observe(form, {
+				subtree: true,
+				attributes: true,
+				attributeFilter: ['required'],
+			})
+		})
+	}, 0)
+}
+
+/**
+ * Validates that all currently tracked required fields are filled.
+ * Returns true when all required fields are filled, false otherwise.
+ */
+function validateRequiredFields(form) {
+	const names = requiredFieldNames.get(form) || []
+	let firstInvalidField = null
+
+	for (const name of names) {
+		const escapedName = CSS.escape(name)
+		const fields = form.querySelectorAll(`:is(input, select, textarea)[name="${escapedName}"]`)
+		if (!fields.length) continue
+
+		const field = fields[0]
+		field.setCustomValidity('')
+
+		let isEmpty = false
+
+		if (field.type === 'radio') {
+			isEmpty = !Array.from(fields).some((r) => r.checked)
+		} else if (field.type === 'checkbox') {
+			isEmpty = !Array.from(fields).some((c) => c.checked)
+		} else {
+			isEmpty = !field.value.trim()
+		}
+
+		if (!isEmpty) continue
+
+		if (!firstInvalidField) {
+			field.setCustomValidity(field.getAttribute('data-required-message') || 'This field is required.')
+			firstInvalidField = field
+		}
+	}
+
+	if (firstInvalidField) {
+		firstInvalidField.reportValidity()
+		firstInvalidField.focus()
+		firstInvalidField.addEventListener(
+			'input',
+			() => {
+				firstInvalidField.setCustomValidity('')
+			},
+			{ once: true }
+		)
+		return false
+	}
+
+	return true
+}
 
 function dontFocusHoneypots() {
 	const honeypots = document.querySelectorAll('input[name="yn_confirm_name"], input[name="yn_confirm_email"], [name="consents[]_v2"]')
@@ -578,6 +726,12 @@ const YnfiniteForms = {
 	},
 
 	async submitForm(element) {
+		// If a required field is empty but still has the required attr → show normal validation error.
+		// If the required attr was removed (tampering) → adds 100 to botScore and lets bot protection handle it.
+		if (element.getAttribute('method') !== 'get' && !validateRequiredFields(element)) {
+			return false
+		}
+
 		const redirect = element.getAttribute('redirect')
 		const method = element.getAttribute('method')
 		const hasProof = method == 'get' ? true : element.getAttribute('data-has-proof')
@@ -821,6 +975,8 @@ const YnfiniteForms = {
 		const forms = document.querySelectorAll('[data-ynform=true]')
 
 		if (forms) {
+			captureRequiredFields()
+			setupRequiredFieldObservers()
 			this.setupCheckboxValidation()
 			checkDefaultValues()
 			botDCheck()
