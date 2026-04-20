@@ -7,7 +7,7 @@
 	"license": "MIT",
 	"devDependencies": {},
 	"dependencies": {
-		"@fingerprintjs/botd": "^1.9.1",
+		"@fingerprintjs/botd": "^2.0.0",
 		"@justinribeiro/lite-youtube": "^1.7.1",
 		"@slightlyoff/lite-vimeo": "^0.1.2",
 		"accordion-js": "^3.4.1",
