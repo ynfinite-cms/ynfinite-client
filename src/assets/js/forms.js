@@ -1,6 +1,6 @@
 import { load } from '@fingerprintjs/botd'
 
-const debug = true
+const debug = false
 const renderedKey = Math.random().toString(36).substring(2)
 const focusedElements = []
 const defaultValueFields = []
