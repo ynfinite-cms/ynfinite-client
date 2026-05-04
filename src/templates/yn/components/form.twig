@@ -46,10 +46,11 @@
 	    <legend style="display: none;">{{ 'yn_contactForm'|trans }}</legend>
 		{% if form.method != "get" %}
 			<label style="display: none !important;" tabindex="-1" aria-hidden="true" for="yn_confirm_email">{{ 'yn_confirmEmail'|trans }}</label>
-			<input type="text" name="yn_confirm_email" id="yn_confirm_email" required value style="display: none !important;" autocomplete="off" tabindex="-1" aria-hidden="true"> 
+			<input type="text" name="yn_confirm_email" id="yn_confirm_email" required value style="display: none !important;" autocomplete="off" tabindex="-1" aria-hidden="true" data-yn-honeypot-expected="{{ _yn_honeypot_token() }}"> 
 			<input type="text" name="yn_confirm_name" style="position:absolute; left:-9999px;" required value placeholder="{{ 'yn_name'|trans }}" autocomplete="off" tabindex="-1" aria-hidden="true"> 
 			<input type="hidden" value="{{form._id}}" name="formId">
 			<input type="hidden" value="{{_ynfinite.languages.current}}" name="formLanguage">
+			<input type="hidden" name="yn_pow_token" value="{{ _yn_pow_token(form) }}">
 			{% set requiredToken = _yn_required_fields_token(form) %}
 			{% if requiredToken %}
 				<input type="hidden" name="yn_required_fields_token" value="{{ requiredToken }}">

@@ -165,6 +165,40 @@ final class TwigRenderer
 
         $this->twig->addFunction($_yn_required_fields_token);
 
+        // Generates a session-bound honeypot token that is compared server-side.
+        // The value changes every session so a bot that reads the source cannot
+        // hard-code the expected honeypot email value.
+        $_yn_honeypot_token = new \Twig\TwigFunction('_yn_honeypot_token', function () {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+            if (empty($_SESSION['yn_honeypot_token'])) {
+                $_SESSION['yn_honeypot_token'] = bin2hex(random_bytes(16));
+            }
+            return htmlspecialchars($_SESSION['yn_honeypot_token'], ENT_QUOTES, 'UTF-8');
+        }, ['is_safe' => ['html']]);
+
+        $this->twig->addFunction($_yn_honeypot_token);
+
+        // Generates a server-signed token that encodes whether the form has
+        // noBotProtection enabled. The server uses this to decide whether to
+        // skip PoW validation, instead of trusting a client-supplied value.
+        $_yn_pow_token = new \Twig\TwigFunction('_yn_pow_token', function ($form) {
+            $payload = json_encode([
+                'formId'          => $form['_id'] ?? '',
+                'noBotProtection' => !empty($form['settings']['noBotProtection']),
+            ]);
+            $secret = $this->settings['ynfinite']['auth']['api_key'] ?? '';
+            $sig    = hash_hmac('sha256', $payload, $secret);
+            return htmlspecialchars(
+                base64_encode(json_encode(['p' => $payload, 's' => $sig])),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+        }, ['is_safe' => ['html']]);
+
+        $this->twig->addFunction($_yn_pow_token);
+
         $filterTrans = new \Twig\TwigFilter('trans', function ($string) {
             $i18n = new I18nUtils($this->twig, $this->data);
             return $i18n->translate($string);

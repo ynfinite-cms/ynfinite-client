@@ -1,9 +1,11 @@
+import DOMPurify from 'dompurify'
+
 function handleResponse(e, t) {
 	t.json().then((t) => {
 		const { success, error, inline: n, redirect: o, type: i } = t
 
 		if (success) {
-			'information' === i && (e.innerHTML = n[0].template),
+			;('information' === i && (e.innerHTML = DOMPurify.sanitize(n[0].template)),
 				'redirect' === i && window.location.replace(o),
 				'inline' === i &&
 					n.forEach((e) => {
@@ -11,17 +13,23 @@ function handleResponse(e, t) {
 							const t = e.selector.substring(1)
 							if ('.' === e.selector.charAt(0)) {
 								document.getElementsByClassName(t).forEach((t) => {
-									t.innerHTML = e.template
+									t.innerHTML = DOMPurify.sanitize(e.template)
 								})
 							}
 							if ('#' === e.selector.charAt(0)) {
-								document.getElementsByClassName(t).innerHTML = e.template
+								const el = document.getElementById(t)
+								if (el) el.innerHTML = DOMPurify.sanitize(e.template)
 							}
 						}
-					})
+					}))
 		} else {
 			const errorContainer = e.querySelector('.yn-error')
-			errorContainer.innerHTML = "<ul><li data-status='" + error.status + "'>" + error.message + '</li></ul>'
+			const li = document.createElement('li')
+			li.dataset.status = error.status
+			li.textContent = error.message
+			const ul = document.createElement('ul')
+			ul.appendChild(li)
+			errorContainer.replaceChildren(ul)
 		}
 	})
 }
@@ -35,13 +43,13 @@ function functSubmit(e) {
 		c = e.target.getAttribute('data-ynfinite-content'),
 		s = e.target.getAttribute('data-ynfinite-section'),
 		sp = e.target.getAttribute('data-ynfinite-slugprefix')
-	n.append('formId', o), n.append('lang', i), n.append('prefix', sp), n.append('contentId', c), n.append('sectionId', s), n.append('action', 'submit')
+	;(n.append('formId', o), n.append('lang', i), n.append('prefix', sp), n.append('contentId', c), n.append('sectionId', s), n.append('action', 'submit'))
 
-	fetch(t.action, {
+	;(fetch(t.action, {
 		method: t.method,
 		body: n,
 	}).then(handleResponse.bind(null, t)),
-		e.preventDefault()
+		e.preventDefault())
 }
 
 function functOnInput(e) {
@@ -49,7 +57,7 @@ function functOnInput(e) {
 		n = new FormData(t),
 		o = t.getAttribute('data-ynfiniteid'),
 		i = t.getAttribute('data-ynfinitelang')
-	n.append('formId', o),
+	;(n.append('formId', o),
 		n.append('lang', i),
 		n.append('action', 'change'),
 		(('insertText' === e.inputType && e.target.value.length > 3) || 'insertText' !== e.inputType) &&
@@ -57,7 +65,7 @@ function functOnInput(e) {
 				method: t.method,
 				body: n,
 			}).then(handleResponse.bind(null, t)),
-		e.preventDefault()
+		e.preventDefault())
 }
 
 const forms = document.querySelectorAll('[data-ynfiniteform="true"]')
@@ -77,7 +85,10 @@ for (const e of buttons)
 		fetch(n || o.action, { method: o.method, body: i }).then((e) => {
 			200 === e.status &&
 				e.json().then((e) => {
-					o.innerHTML = `<div class="response">${e.message}</div>`
+					const responseDiv = document.createElement('div')
+					responseDiv.className = 'response'
+					responseDiv.textContent = e.message
+					o.replaceChildren(responseDiv)
 				})
 		})
 	})
