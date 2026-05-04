@@ -1,4 +1,5 @@
 import { load } from '@fingerprintjs/botd'
+import DOMPurify from 'dompurify'
 
 const debug = false
 const renderedKey = Math.random().toString(36).substring(2)
@@ -196,11 +197,12 @@ function checkHoneypot(form) {
 	}
 
 	const honeypot_mail = form.querySelector('input[name="yn_confirm_email"]')
+	const expectedMailValue = honeypot_mail?.dataset?.ynHoneypotExpected || 'my@email.com'
 	if (!honeypot_mail.value) {
-		honeypot_mail.value = 'my@email.com'
+		honeypot_mail.value = expectedMailValue
 	}
 
-	if (honeypot_mail && honeypot_mail.value !== 'my@email.com') {
+	if (honeypot_mail && honeypot_mail.value !== expectedMailValue) {
 		botScore += 15
 		if (!errorCodes.includes('2')) {
 			errorCodes.push('2')
@@ -723,6 +725,13 @@ function validateCaptcha(form) {
 const YnfiniteForms = {
 	resetForm(element) {
 		element.reset()
+		// Clear PoW state so a fresh proof must be mined before the next submission.
+		delete element.dataset.working
+		element.dataset.hasProof = 'false'
+		element.dataset.proofenHash = ''
+		element.dataset.proofenNonce = ''
+		element.dataset.proofenPreviousHash = ''
+		element.dataset.proofenTimestamp = ''
 	},
 
 	async submitForm(element) {
@@ -863,6 +872,9 @@ const YnfiniteForms = {
 		formData.set('formLanguage', element.getAttribute('data-language'))
 		formData.set('hasProof', hasProof)
 		formData.set('proofenHash', proofenHash)
+		formData.set('proofenNonce', element.getAttribute('data-proofen-nonce') ?? '')
+		formData.set('proofenPreviousHash', element.getAttribute('data-proofen-previous-hash') ?? '')
+		formData.set('proofenTimestamp', element.getAttribute('data-proofen-timestamp') ?? '')
 		if (element.hasAttribute('data-ynsectionid')) {
 			formData.set('sectionId', element.getAttribute('data-ynsectionid'))
 		}
@@ -1119,7 +1131,7 @@ const YnfiniteForms = {
 					markup = `<option value>${formElement.options[0].text}</option>${markup}`
 				}
 
-				formElement.innerHTML = markup
+				formElement.innerHTML = DOMPurify.sanitize(markup)
 			}
 		}
 	},
@@ -1131,7 +1143,7 @@ const YnfiniteForms = {
 		const innerContainer = responseContainer.querySelector('.yn-form-response__inner')
 
 		formContent.classList.add('inactive')
-		innerContainer.innerHTML = data.rendered
+		innerContainer.innerHTML = DOMPurify.sanitize(data.rendered)
 		responseContainer.classList.add('active')
 		responseContainer.scrollIntoView({
 			behavior: 'auto',

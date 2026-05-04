@@ -127,12 +127,29 @@ final class SendFormService extends RequestService
     private function securityCheck($request) 
     {
         $body = $request->getParsedBody();
-        if($body["yn_confirm_email"] !== "my@email.com") {
+
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
+        $expected = $_SESSION['yn_honeypot_token'] ?? null;
+
+        // If no session token exists the page was rendered without one (e.g. old
+        // cached page). Fall back to blocking anything that does not look like a
+        // browser-filled empty field rather than silently accepting.
+        if (empty($expected)) {
             $this->securityError = array(
                 "success" => false,
-                "rendered" => "The form has no proof that is was sent by a human. Sorry for you inconvenience."
+                "rendered" => "Session expired. Please reload the page and try again."
             );
-               
+            return false;
+        }
+
+        if (!hash_equals($expected, (string)($body['yn_confirm_email'] ?? ''))) {
+            $this->securityError = array(
+                "success" => false,
+                "rendered" => "The form has no proof that it was sent by a human. Sorry for the inconvenience."
+            );
             return false;
         }
         return true;

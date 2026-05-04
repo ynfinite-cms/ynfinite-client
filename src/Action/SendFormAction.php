@@ -30,6 +30,16 @@ final class SendFormAction
         ServerRequestInterface $request, 
         ResponseInterface $response
     ): ResponseInterface {
+        if ($this->isRateLimited($request)) {
+            $response->getBody()->write((string)json_encode([
+                'type'    => 'error',
+                'message' => 'Too many requests. Please wait a moment before trying again.',
+            ]));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(429);
+        }
+
         $formResponse = $this->sendFormService->sendForm($request, $_POST);
         $result = array();
 
@@ -64,5 +74,35 @@ final class SendFormAction
         return $response
             ->withHeader('Content-Type', 'application/json')
             ->withStatus(200);
+    }
+
+    /**
+     * Sliding-window rate limiter stored in the PHP session.
+     * Allows at most RATE_LIMIT_MAX requests within RATE_LIMIT_WINDOW seconds
+     * per session (= per browser session / IP behind the session cookie).
+     */
+    private function isRateLimited(ServerRequestInterface $request): bool
+    {
+        $rateLimitMax    = 10;   // max form submissions
+        $rateLimitWindow = 60;   // per this many seconds
+
+        $now = time();
+        $key = 'yn_form_rate_limit';
+
+        if (!isset($_SESSION[$key]) || !is_array($_SESSION[$key])) {
+            $_SESSION[$key] = [];
+        }
+
+        // Remove timestamps outside the current window
+        $_SESSION[$key] = array_values(
+            array_filter($_SESSION[$key], fn(int $ts) => ($now - $ts) < $rateLimitWindow)
+        );
+
+        if (count($_SESSION[$key]) >= $rateLimitMax) {
+            return true;
+        }
+
+        $_SESSION[$key][] = $now;
+        return false;
     }
 }

@@ -36,5 +36,5 @@ onmessage = (e) => {
 		}
 	}
 
-	postMessage(hash)
+	postMessage({ hash, nonce })
 }

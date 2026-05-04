@@ -22,10 +22,12 @@ class Block {
 			const blockWorker = new Worker('/assets/vendor/ynfinite/js/worker.min.js')
 
 			blockWorker.onmessage = (e) => {
-				this.hash = e.data
+				this.hash = e.data.hash
 				this.data.form.dataset.hasProof = 'true'
 				this.data.form.dataset.proofenHash = this.hash
-
+				this.data.form.dataset.proofenNonce = String(e.data.nonce)
+				this.data.form.dataset.proofenPreviousHash = String(this.previousHash)
+				this.data.form.dataset.proofenTimestamp = String(this.timestamp)
 				const formSubmitButton = this.data.form.querySelector('button[type=submit]')
 
 				formSubmitButton.classList.remove('yn-loader')
@@ -40,8 +42,8 @@ class Block {
 			console.time()
 
 			blockWorker.postMessage({
-				form: this.data['form'].id,
-				previousHash: this.previousHash,
+				form: this.data['form'].dataset.ynformid,
+				previousHash: String(this.previousHash),
 				timestamp: this.timestamp,
 				difficulty,
 				chances,
