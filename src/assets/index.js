@@ -8,6 +8,7 @@ import YnfiniteForms from './js/forms'
 import YnfiniteFormSettings from './js/formSettings'
 import YnfiniteLanguageSwitch from './js/languageSwitch'
 import YnfiniteLogin from './js/login'
+import YnfiniteCache from './js/cache'
 
 window.addEventListener('DOMContentLoaded', () => {
 	YnfiniteForms.setup()
@@ -20,6 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 window.$_yn = {
+	cache: YnfiniteCache,
 	forms: {
 		updateUrl: YnfiniteForms.updateUrl,
 		repopulate: YnfiniteForms.repopulateForm,

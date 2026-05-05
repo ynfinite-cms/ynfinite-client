@@ -20,7 +20,7 @@ if (empty($_SESSION['yn_honeypot_token'])) {
 $_ynHoneypotToken = $_SESSION['yn_honeypot_token'];
 session_write_close(); // Release session — Slim will reopen it with its own config
 
-if($_ENV['STATIC_PAGES'] !== "false" && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if($_ENV['STATIC_PAGES'] !== "false" && $_SERVER['REQUEST_METHOD'] === 'GET' && strpos($_SERVER['REQUEST_URI'], '/yn-api/') !== 0) {
     $cachedPage = StaticCache::getCache("PAGE");
     if ($cachedPage) {
         // The cached HTML contains a stale data-yn-honeypot-expected value from
