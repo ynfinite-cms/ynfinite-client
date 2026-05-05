@@ -15,9 +15,10 @@
         <div class="yn-video" id="yn-video-youtube-{{randomKey}}" style="background-image: url('https://i.ytimg.com/vi/{{ id }}/sddefault.jpg'); aspect-ratio: {{ aspectRatio }}; width: 100%; height: auto; background-size: cover; background-position: center;"></div>
         <script>
             // Try to load highest quality thumbnail (maxresdefault), fallback to sddefault
-            const getThumbnailUrl = (videoId) => {
-                const maxRes = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
-                const sdDefault = `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`;
+            if (!window.getThumbnailUrl) {
+                window.getThumbnailUrl = (videoId) => {
+                    const maxRes = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+                    const sdDefault = `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`;
                 
                 return new Promise((resolve) => {
                     const img = new Image();
@@ -33,10 +34,11 @@
                     img.src = maxRes;
                 });
             };
+            }
 
             window.addEventListener('load', () => {
                 // Load the highest quality thumbnail available
-                getThumbnailUrl('{{id}}').then(url => {
+                window.getThumbnailUrl('{{id}}').then(url => {
                     const video = document.querySelector('#yn-video-youtube-{{randomKey}}');
                     if(video) {
                         video.style.backgroundImage = `url('${url}')`;
