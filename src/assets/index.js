@@ -3,12 +3,12 @@ import './js/general'
 
 import YnfiniteAccordions from './js/accordions'
 import YnfiniteBotProtection from './js/botprotection'
+import YnfiniteCache from './js/cache'
 import YnfiniteConsents from './js/cookies'
 import YnfiniteForms from './js/forms'
 import YnfiniteFormSettings from './js/formSettings'
 import YnfiniteLanguageSwitch from './js/languageSwitch'
 import YnfiniteLogin from './js/login'
-import YnfiniteCache from './js/cache'
 
 window.addEventListener('DOMContentLoaded', () => {
 	YnfiniteForms.setup()
