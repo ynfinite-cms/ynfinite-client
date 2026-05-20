@@ -80,7 +80,7 @@ class BlockChain {
 
 const YnfiniteBotProtection = {
 	setup() {
-		const csrfToken = document.cookie.match(/(?:^|;\s*)_yncsrf=([^;]+)/)?.[1] || ''
+		const csrfToken = document.cookie.match(/(?:^|;\s*)ynfinite-csrf-protection=([^;]+)/)?.[1] || ''
 		const blockchain = new BlockChain()
 
 		// .yn-no-bot-protection is set by Twig on noBotProtection forms.

@@ -12,7 +12,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 /**
  * CsrfCookieMiddleware
  *
- * Sets a `_yncsrf` cookie containing a cryptographically random token.
+ * Sets a `ynfinite-csrf-protection` cookie containing a cryptographically random token.
  * The cookie is NOT HttpOnly so that JavaScript can read it for:
  *   - Proof-of-Work input:      SHA256(csrfToken + prevHash + ...)
  *   - Honeypot value:           yn_confirm_email must equal the cookie value
@@ -23,7 +23,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final class CsrfCookieMiddleware implements MiddlewareInterface
 {
-    private const COOKIE_NAME   = '_yncsrf';
+    private const COOKIE_NAME   = 'ynfinite-csrf-protection';
     private const COOKIE_LENGTH = 32; // bytes → 64 hex chars
     private const COOKIE_TTL    = 3600; // 1 hour
 

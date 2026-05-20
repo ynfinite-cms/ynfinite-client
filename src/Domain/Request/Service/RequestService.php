@@ -64,7 +64,7 @@ class RequestService {
         }
 
         $hash      = (string) $body["proofenHash"];
-        $csrfToken = $request->getCookieParams()['_yncsrf'] ?? '';
+        $csrfToken = $request->getCookieParams()['ynfinite-csrf-protection'] ?? '';
         $formId    = (string) ($body['formId'] ?? '');
 
         // noBotProtection POST forms submit SHA256(csrfToken + formId + 'nobot') with no nonce,

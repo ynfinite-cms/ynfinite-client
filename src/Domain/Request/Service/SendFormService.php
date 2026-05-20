@@ -212,7 +212,7 @@ class SendFormService extends RequestService
         // The expected honeypot value is the per-session CSRF cookie, set by JS
         // in checkHoneypot() before submit. A bot posting without a browser session
         // will not know the current cookie value.
-        $expectedHoneypot = $request->getCookieParams()['_yncsrf'] ?? '';
+        $expectedHoneypot = $request->getCookieParams()['ynfinite-csrf-protection'] ?? '';
 
         if (empty($expectedHoneypot) || $body["yn_confirm_email"] !== $expectedHoneypot) {
             $this->securityError = array(

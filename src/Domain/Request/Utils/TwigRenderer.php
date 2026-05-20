@@ -167,7 +167,7 @@ final class TwigRenderer
         $_yn_nobot_token = new \Twig\TwigFunction('_yn_nobot_token', function ($context, $form) {
             $formId    = $form['_id'] ?? '';
             $secret    = $this->settings['ynfinite']['auth']['api_key'] ?? '';
-            $csrfToken = $_COOKIE['_yncsrf'] ?? '';
+            $csrfToken = $_COOKIE['ynfinite-csrf-protection'] ?? '';
             // Bind token to both formId and the session CSRF token so it cannot
             // be lifted from another page or replayed across sessions.
             return hash_hmac('sha256', $formId . ':nobot:' . $csrfToken, $secret);

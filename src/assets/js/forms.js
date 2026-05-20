@@ -15,11 +15,11 @@ let normalTypingConsistency = true
 let errorCodes = []
 
 /**
- * Reads the `_yncsrf` cookie value set by CsrfCookieMiddleware.
+ * Reads the `ynfinite-csrf-protection` cookie value set by CsrfCookieMiddleware.
  * Returns an empty string when the cookie is not present.
  */
 function getCsrfToken() {
-	const match = document.cookie.match(/(?:^|;\s*)_yncsrf=([^;]+)/)
+	const match = document.cookie.match(/(?:^|;\s*)ynfinite-csrf-protection=([^;]+)/)
 	return match ? decodeURIComponent(match[1]) : ''
 }
 
