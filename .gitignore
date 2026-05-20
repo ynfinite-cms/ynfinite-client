@@ -12,6 +12,10 @@
 !/tmp/locales/.gitkeep
 !/templates/.gitkeep
 
+/tests/
+/phpunit.xml
+/docs
+
 ### addons
 .idea
 ynfinite-client.iml

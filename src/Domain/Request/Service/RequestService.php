@@ -56,11 +56,62 @@ class RequestService {
         $body = $request->getParsedBody();
         
         if(!$body) {
-            $body = json_decode(file_get_contents('php://input'));
+            $body = json_decode(file_get_contents('php://input'), true);
         }
 
         if(!$body["hasProof"] || !$body["proofenHash"]) {
             throw new Exception("The form has no proof that is was sent by a human. Sorry for you inconvenience.");
+        }
+
+        $hash      = (string) $body["proofenHash"];
+        $csrfToken = $request->getCookieParams()['_yncsrf'] ?? '';
+        $formId    = (string) ($body['formId'] ?? '');
+
+        // noBotProtection POST forms submit SHA256(csrfToken + formId + 'nobot') with no nonce,
+        // plus a server-signed yn_nobot_token (HMAC-SHA256(formId:nobot, api_key)).
+        // Both must be present and valid — this prevents bots from faking the nobot path
+        // on regular PoW forms (which never have yn_nobot_token in their HTML).
+        $noBotSentinel  = hash('sha256', $csrfToken . $formId . 'nobot');
+        $submittedNonce = (string) ($body['proofenNonce'] ?? '');
+        $noBotToken     = (string) ($body['yn_nobot_token'] ?? '');
+        // Token is bound to formId + session CSRF — prevents replay from another page/session.
+        $expectedNoBotToken = hash_hmac('sha256', $formId . ':nobot:' . $csrfToken, $this->settings['auth']['api_key'] ?? '');
+        if ($submittedNonce === ''
+            && hash_equals($noBotSentinel, $hash)
+            && hash_equals($expectedNoBotToken, $noBotToken)
+        ) {
+            return true;
+        }
+
+        // Reject the old forgeable 'true' sentinel.
+        if ($hash === 'true') {
+            throw new Exception("The form has no proof that it was sent by a human. Sorry for the inconvenience.");
+        }
+
+        // Validate SHA-256 hex format.
+        if (!preg_match('/^[0-9a-f]{64}$/', $hash)) {
+            throw new Exception("The form has no proof that it was sent by a human. Sorry for the inconvenience.");
+        }
+
+        // Verify CSRF-tied PoW: recompute SHA256(csrfToken + prevHash + timestamp + formId + nonce)
+        // and confirm it matches the submitted hash and meets the difficulty prefix.
+        $nonce     = $submittedNonce;
+        $prevHash  = (string) ($body['proofenPrevHash']  ?? '');
+        $timestamp = (string) ($body['proofenTimestamp'] ?? '');
+
+        if ($nonce === '') {
+            throw new Exception("The form proof could not be verified. Sorry for the inconvenience.");
+        }
+
+        $expected = hash('sha256', $csrfToken . $prevHash . $timestamp . $formId . $nonce);
+        if (!hash_equals($expected, $hash)) {
+            throw new Exception("PoW verification failed.");
+        }
+
+        // Difficulty: prefix must be '00000' or '11111' (difficulty=5, chances=1 in worker.js).
+        $prefix = substr($hash, 0, 5);
+        if ($prefix !== '00000' && $prefix !== '11111') {
+            throw new Exception("PoW difficulty not met.");
         }
 
         return true;
@@ -78,6 +129,37 @@ class RequestService {
 
         // Fallback to the constructed URL if referer is invalid
         return $fallback;
+    }
+
+    /**
+     * Soft Origin header validation.
+     *
+     * If an Origin header is present it must match the server's own host.
+     * Absent Origin is allowed (covers unusual proxies / browser configs).
+     * Returns an error array on failure, null on pass.
+     */
+    protected function validateOrigin(\Psr\Http\Message\ServerRequestInterface $request): ?array
+    {
+        $originHeader = $request->getHeaderLine('Origin');
+        if ($originHeader === '') {
+            return null; // no Origin → allow (rely on CSRF as primary guard)
+        }
+
+        $originHost = parse_url($originHeader, PHP_URL_HOST);
+        $serverParams = $request->getServerParams();
+        $serverHost = $serverParams['HTTP_HOST'] ?? $_SERVER['HTTP_HOST'] ?? $request->getUri()->getHost();
+
+        // Strip port from server host for comparison
+        $serverHost = explode(':', $serverHost)[0];
+
+        if ($originHost === null || strtolower($originHost) !== strtolower($serverHost)) {
+            return [
+                'type'    => 'error',
+                'message' => 'Request origin not allowed.',
+            ];
+        }
+
+        return null;
     }
 
     protected function getBody($request) {

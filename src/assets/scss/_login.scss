@@ -38,7 +38,9 @@
 	min-width: 20rem;
 	z-index: 200;
 	padding: 1.5rem;
-	box-shadow: rgba(17, 17, 26, 0.1) 0px 0px 10px, rgba(17, 17, 26, 0.1) 0px 0px 20px;
+	box-shadow:
+		rgba(17, 17, 26, 0.1) 0px 0px 10px,
+		rgba(17, 17, 26, 0.1) 0px 0px 20px;
 
 	.yn-dropdown__content {
 		display: flex;
@@ -87,9 +89,20 @@
 }
 
 .yn-error {
-	color: var(--error, #f74949);
+	background-color: var(--error, #f74949);
+	color: var(--light, #fff);
 	text-align: left;
-	margin-right: auto;
-	width: auto;
+	width: fit-content;
 	font-weight: var(--font-weight-bold, 700);
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--border-radius, 4px);
+	display: none;
+	margin-bottom: 0.5rem;
+	margin-right: auto;
+	margin-left: 0;
+
+	&:not(:empty),
+	& > * {
+		display: block;
+	}
 }

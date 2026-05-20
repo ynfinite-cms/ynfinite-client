@@ -134,18 +134,14 @@ final class TwigRenderer
 
             $requiredAliases = [];
             foreach ($form['groups'] as $group) {
-                foreach ($group['fields'] ?? [] as $row) {
-                    foreach ($row as $field) {
-                        if (!empty($field['required']) && !empty($field['alias'])) {
-                            $requiredAliases[] = $field['alias'];
-                        }
+                foreach ($group['elements'] ?? [] as $field) {
+                    if (!empty($field['required']) && !empty($field['alias'])) {
+                        $requiredAliases[] = $field['alias'];
                     }
                 }
             }
 
-            if (empty($requiredAliases)) {
-                return '';
-            }
+            $requiredAliases = array_values(array_unique($requiredAliases));
 
             $payload = json_encode([
                 'formId' => $form['_id'] ?? '',
@@ -165,6 +161,38 @@ final class TwigRenderer
 
         $this->twig->addFunction($_yn_required_fields_token);
 
+        // Generates a server-signed token for noBotProtection forms.
+        // PHP verifies this token on the nobot sentinel path, preventing bots from
+        // faking the nobot path on regular PoW forms (which never have this hidden field).
+        $_yn_nobot_token = new \Twig\TwigFunction('_yn_nobot_token', function ($context, $form) {
+            $formId    = $form['_id'] ?? '';
+            $secret    = $this->settings['ynfinite']['auth']['api_key'] ?? '';
+            $csrfToken = $_COOKIE['_yncsrf'] ?? '';
+            // Bind token to both formId and the session CSRF token so it cannot
+            // be lifted from another page or replayed across sessions.
+            return hash_hmac('sha256', $formId . ':nobot:' . $csrfToken, $secret);
+        }, ['is_safe' => ['html'], 'needs_context' => true]);
+
+        $this->twig->addFunction($_yn_nobot_token);
+
+        // Generates a per-form, per-page-load synchronizer CSRF token.
+        // Stores it in $_SESSION['_yn_csrf'][$formId] so PHP can verify it on
+        // submission without ever transmitting a secret to the browser.
+        // A new token is generated on every page render — the previous value is
+        // overwritten, so replaying a token from a prior load is rejected.
+        $_yn_csrf_token = new \Twig\TwigFunction('_yn_csrf_token', function ($context, $form) {
+            $formId = $form['_id'] ?? '';
+            $token  = bin2hex(random_bytes(32));
+            if (!isset($_SESSION['_yn_csrf'])) {
+                $_SESSION['_yn_csrf'] = [];
+            }
+            $_SESSION['_yn_csrf'][$formId] = $token;
+            return $token;
+        }, ['is_safe' => ['html'], 'needs_context' => true]);
+
+        $this->twig->addFunction($_yn_csrf_token);
+
+        // Restored the missing declaration for $filterTrans
         $filterTrans = new \Twig\TwigFilter('trans', function ($string) {
             $i18n = new I18nUtils($this->twig, $this->data);
             return $i18n->translate($string);

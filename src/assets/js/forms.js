@@ -4,7 +4,6 @@ const debug = false
 const renderedKey = Math.random().toString(36).substring(2)
 const focusedElements = []
 const defaultValueFields = []
-const requiredFieldNames = new Map() // form element -> array of field names that were required at page load
 let botD = undefined
 let humanMovement = false
 let botScore = 0
@@ -14,152 +13,14 @@ let captchaExists = false
 let captchaCode
 let normalTypingConsistency = true
 let errorCodes = []
-let legitimateRequiredToggle = false
 
 /**
- * Captures the names of all required fields in each form at page-load time,
- * before any user or DevTools DOM manipulation can occur.
+ * Reads the `_yncsrf` cookie value set by CsrfCookieMiddleware.
+ * Returns an empty string when the cookie is not present.
  */
-function captureRequiredFields() {
-	const forms = document.querySelectorAll('[data-ynform=true]')
-	forms.forEach((form) => {
-		const fields = form.querySelectorAll(':is(input, select, textarea)[data-ynfield][required]:not([tabindex="-1"], [type="hidden"], .hidden, [name="yn_confirm_name"], [name="consents[]_v2"])')
-		const seen = new Set()
-		const names = []
-		fields.forEach((field) => {
-			const name = field.getAttribute('name')
-			if (name && !seen.has(name)) {
-				seen.add(name)
-				names.push(name)
-			}
-		})
-		requiredFieldNames.set(form, names)
-	})
-}
-
-/**
- * Watches for required attribute changes on form fields.
- * If a change happens during a user-initiated event (click/change) it is
- * treated as a legitimate toggle and the snapshot is updated.
- * Otherwise it is treated as DevTools tampering and adds to botScore.
- */
-function setupRequiredFieldObservers() {
-	const setLegitimateFlag = () => {
-		legitimateRequiredToggle = true
-		setTimeout(() => {
-			legitimateRequiredToggle = false
-		}, 0)
-	}
-	document.addEventListener('click', setLegitimateFlag, true)
-	document.addEventListener('change', setLegitimateFlag, true)
-
-	const forms = document.querySelectorAll('[data-ynform=true]')
-	// Defer observer start so any page-load JS that legitimately toggles required
-	// attributes runs first and is not flagged as tampering.
-	setTimeout(() => {
-		forms.forEach((form) => {
-			const observer = new MutationObserver((mutations) => {
-				for (const mutation of mutations) {
-					if (mutation.attributeName !== 'required') continue
-					const field = mutation.target
-					if (!field.matches(':is(input, select, textarea)[data-ynfield]:not([tabindex="-1"], [type="hidden"], .hidden, [name="yn_confirm_name"], [name="consents[]_v2"])')) continue
-
-					const name = field.getAttribute('name')
-					if (!name) continue
-
-					const names = requiredFieldNames.get(form) || []
-
-					if (field.hasAttribute('required')) {
-						// required was added
-						if (!names.includes(name)) {
-							names.push(name)
-							requiredFieldNames.set(form, names)
-						}
-						if (debug) {
-							console.log(`%cRequired added for "${name}" (legitimate: ${legitimateRequiredToggle})`, 'color: blue')
-						}
-					} else {
-						// required was removed
-						if (legitimateRequiredToggle) {
-							const idx = names.indexOf(name)
-							if (idx !== -1) {
-								names.splice(idx, 1)
-								requiredFieldNames.set(form, names)
-							}
-							if (debug) {
-								console.log(`%cRequired removed for "${name}" — legitimate toggle`, 'color: blue')
-							}
-						} else {
-							if (!errorCodes.includes('18')) {
-								botScore += 50
-								errorCodes.push('18')
-								if (debug) {
-									console.log('%cBot detected by required attr tampering (added 50 Score)', 'color: red')
-									console.log('%cNew Botscore: ' + botScore, `color: ${botScore >= 100 ? 'red' : 'yellow'}`)
-								}
-							}
-						}
-					}
-				}
-			})
-
-			observer.observe(form, {
-				subtree: true,
-				attributes: true,
-				attributeFilter: ['required'],
-			})
-		})
-	}, 0)
-}
-
-/**
- * Validates that all currently tracked required fields are filled.
- * Returns true when all required fields are filled, false otherwise.
- */
-function validateRequiredFields(form) {
-	const names = requiredFieldNames.get(form) || []
-	let firstInvalidField = null
-
-	for (const name of names) {
-		const escapedName = CSS.escape(name)
-		const fields = form.querySelectorAll(`:is(input, select, textarea)[name="${escapedName}"]`)
-		if (!fields.length) continue
-
-		const field = fields[0]
-		field.setCustomValidity('')
-
-		let isEmpty = false
-
-		if (field.type === 'radio') {
-			isEmpty = !Array.from(fields).some((r) => r.checked)
-		} else if (field.type === 'checkbox') {
-			isEmpty = !Array.from(fields).some((c) => c.checked)
-		} else {
-			isEmpty = !field.value.trim()
-		}
-
-		if (!isEmpty) continue
-
-		if (!firstInvalidField) {
-			field.setCustomValidity(field.getAttribute('data-required-message') || 'This field is required.')
-			firstInvalidField = field
-		}
-	}
-
-	if (firstInvalidField) {
-		firstInvalidField.reportValidity()
-		firstInvalidField.focus()
-		firstInvalidField.addEventListener(
-			'input',
-			() => {
-				firstInvalidField.setCustomValidity('')
-			},
-			{ once: true }
-		)
-		return false
-	}
-
-	return true
+function getCsrfToken() {
+	const match = document.cookie.match(/(?:^|;\s*)_yncsrf=([^;]+)/)
+	return match ? decodeURIComponent(match[1]) : ''
 }
 
 function dontFocusHoneypots() {
@@ -196,11 +57,12 @@ function checkHoneypot(form) {
 	}
 
 	const honeypot_mail = form.querySelector('input[name="yn_confirm_email"]')
+	const expectedHoneypot = getCsrfToken()
 	if (!honeypot_mail.value) {
-		honeypot_mail.value = 'my@email.com'
+		honeypot_mail.value = expectedHoneypot
 	}
 
-	if (honeypot_mail && honeypot_mail.value !== 'my@email.com') {
+	if (honeypot_mail && honeypot_mail.value !== expectedHoneypot) {
 		botScore += 15
 		if (!errorCodes.includes('2')) {
 			errorCodes.push('2')
@@ -726,19 +588,22 @@ const YnfiniteForms = {
 	},
 
 	async submitForm(element) {
-		// If a required field is empty but still has the required attr → show normal validation error.
-		// If the required attr was removed (tampering) → adds 100 to botScore and lets bot protection handle it.
-		if (element.getAttribute('method') !== 'get' && !validateRequiredFields(element)) {
-			return false
-		}
-
 		const redirect = element.getAttribute('redirect')
 		const method = element.getAttribute('method')
 		const hasProof = method == 'get' ? true : element.getAttribute('data-has-proof')
 		const proofenHash = method == 'get' ? true : element.getAttribute('data-proofen-hash')
+		const proofenNonce = method == 'get' ? '' : element.getAttribute('data-proofen-nonce') || ''
+		const proofenPrevHash = method == 'get' ? '' : element.getAttribute('data-proofen-prev-hash') || ''
+		const proofenTimestamp = method == 'get' ? '' : element.getAttribute('data-proofen-timestamp') || ''
 		const formSubmitButton = element.querySelector('button[type=submit]')
 
-		if (!captchaExists) {
+		// yn_nobot_token is server-rendered by PHP only when form.settings.noBotProtection is true.
+		// Its HMAC value is signed with the API key, so a bot cannot compute a valid token without it.
+		// Presence is used as the JS skip signal — faking it (adding a garbage input) doesn't help
+		// the bot because PHP will reject any submission with an invalid HMAC.
+		const isNoBotForm = !!element.querySelector('input[name="yn_nobot_token"]')
+
+		if (!captchaExists && !isNoBotForm) {
 			checkFocus(element)
 			checkTryTypingConsistency()
 
@@ -829,8 +694,7 @@ const YnfiniteForms = {
 			}
 		}
 
-		if (botScore >= 100) {
-			console.log('&cSorry, there is no proof here that you are a human. The form can not be sent.', 'color: red')
+		if (!isNoBotForm && botScore >= 100) {
 			formSubmitButton.classList.remove('yn-loader')
 			formSubmitButton.style.removeProperty('padding-left')
 			formSubmitButton.style.borderColor = 'var(--error, red)'
@@ -863,6 +727,9 @@ const YnfiniteForms = {
 		formData.set('formLanguage', element.getAttribute('data-language'))
 		formData.set('hasProof', hasProof)
 		formData.set('proofenHash', proofenHash)
+		formData.set('proofenNonce', proofenNonce)
+		formData.set('proofenPrevHash', proofenPrevHash)
+		formData.set('proofenTimestamp', proofenTimestamp)
 		if (element.hasAttribute('data-ynsectionid')) {
 			formData.set('sectionId', element.getAttribute('data-ynsectionid'))
 		}
@@ -895,6 +762,9 @@ const YnfiniteForms = {
 							},
 						})
 					)
+					// Clear any previous error message on success
+					const errorElSuccess = element.querySelector('.yn-error')
+					if (errorElSuccess) errorElSuccess.textContent = ''
 					break
 				case 'redirect':
 					window.location.replace(jsonResponse['url'])
@@ -902,7 +772,18 @@ const YnfiniteForms = {
 				case '404':
 				case 'error':
 					console.log('404/Error: ', jsonResponse['message'])
-					element.querySelector('.yn-error').textContent = jsonResponse['message']
+					const errorEl = element.querySelector('.yn-error')
+					if (errorEl) {
+						errorEl.textContent = jsonResponse['message']
+					} else if (method == 'post' && formSubmitButton) {
+						formSubmitButton.classList.remove('yn-loader')
+						formSubmitButton.style.removeProperty('padding-left')
+						formSubmitButton.style.borderColor = 'var(--error, red)'
+						formSubmitButton.style.backgroundColor = 'var(--error, red)'
+						formSubmitButton.style.color = 'var(--light, white)'
+						formSubmitButton.style.pointerEvents = 'none'
+						formSubmitButton.textContent = 'Fehler. Bitte neu laden.'
+					}
 					break
 			}
 
@@ -975,8 +856,6 @@ const YnfiniteForms = {
 		const forms = document.querySelectorAll('[data-ynform=true]')
 
 		if (forms) {
-			captureRequiredFields()
-			setupRequiredFieldObservers()
 			this.setupCheckboxValidation()
 			checkDefaultValues()
 			botDCheck()
@@ -1031,6 +910,26 @@ const YnfiniteForms = {
 				newFormLink.addEventListener('click', (e) => {
 					e.preventDefault()
 					this.resetForm(form)
+
+					// Reset PoW state so the worker runs again on next focusin.
+					// The existing focusin listener in botprotection.js picks this up automatically.
+					form.dataset.hasProof = 'false'
+					form.dataset.proofenHash = ''
+					delete form.dataset.working
+
+					const submitBtn = form.querySelector('button[type=submit]')
+					if (submitBtn) {
+						submitBtn.classList.remove('yn-loader', 'yn-botprotection')
+						submitBtn.style.removeProperty('padding-left')
+						if (submitBtn.dataset.label) {
+							submitBtn.textContent = submitBtn.dataset.label
+						}
+					}
+
+					// Remove captcha if it was injected into the form
+					const captchaRow = form.querySelector('.yn-captcha-wrapper')?.closest('.yn-form-grid-row')
+					if (captchaRow) captchaRow.remove()
+					captchaExists = false
 
 					newFormLink.closest('form').querySelector('.form-content').classList.remove('inactive')
 					newFormLink.closest('.yn-form-response').classList.remove('active')
