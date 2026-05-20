@@ -11,6 +11,7 @@ use App\Domain\Request\Repository\RequestCacheRepository;
 use App\Domain\Request\Service\RequestService;
 
 use App\Domain\Request\Utils\CurlHandler;
+use App\Utils\FormSecurityLog;
 
 class SendFormService extends RequestService
 {
@@ -30,24 +31,26 @@ class SendFormService extends RequestService
     
         $postBody = $this->getBody($request);
 
+        FormSecurityLog::cleanup();
+
         // --- Layer 1: CSRF double-submit cookie ---
         $csrfError = $this->validateCsrfToken($request);
         if ($csrfError !== null) {
-            $this->logBlockedRequest($request, 'csrf');
+            FormSecurityLog::write($request, 'csrf');
             return $csrfError;
         }
 
         // --- Layer 2: Soft Origin header check ---
         $originError = $this->validateOrigin($request);
         if ($originError !== null) {
-            $this->logBlockedRequest($request, 'origin');
+            FormSecurityLog::write($request, 'origin');
             return $originError;
         }
 
         // --- Layer 3: Session-based rate limiting ---
         $rateLimitError = $this->checkRateLimit($request);
         if ($rateLimitError !== null) {
-            $this->logBlockedRequest($request, 'rate_limit');
+            FormSecurityLog::write($request, 'rate_limit');
             return $rateLimitError;
         }
 
@@ -57,7 +60,7 @@ class SendFormService extends RequestService
         $formMethod = strtolower(is_array($parsedBody) ? ($parsedBody['method'] ?? 'post') : 'post');
 
         if ($formMethod === 'post' && !$this->securityCheck($request)) {
-            $this->logBlockedRequest($request, 'honeypot');
+            FormSecurityLog::write($request, 'honeypot');
             return $this->securityError;
         }
 
@@ -72,13 +75,15 @@ class SendFormService extends RequestService
             try {
                 $this->checkPostProof($request);
             } catch (\Exception $e) {
-                $this->logBlockedRequest($request, 'pow');
+                FormSecurityLog::write($request, 'pow');
                 return [
                     'type'    => 'error',
                     'message' => 'Security check failed. Please reload the page and try again.',
                 ];
             }
         }
+
+        FormSecurityLog::write($request, 'allowed');
 
         $response = $this->request(trim($path), $this->settings["services"]["form"], $postBody, $jsonResponse);
         $statusCode = $response["statusCode"];
@@ -160,49 +165,6 @@ class SendFormService extends RequestService
         }
 
         return true;
-    }
-
-    /**
-     * Appends a JSON-encoded audit line to the security log file.
-     * Each line captures the timestamp, client IP, formId, and the guard
-     * that rejected the request.
-     */
-    protected function logBlockedRequest(ServerRequestInterface $request, string $reason): void
-    {
-        // Respect FORM_SECURITY_LOG env var (default: enabled).
-        // Set FORM_SECURITY_LOG=false in .env to disable audit logging.
-        $raw = $_ENV['FORM_SECURITY_LOG'] ?? 'true';
-        if (!$raw || $raw === 'false') {
-            return;
-        }
-
-        $body   = $request->getParsedBody();
-        $formId = is_array($body) ? ($body['formId'] ?? '') : '';
-        $params = $request->getServerParams();
-        $ip     = $params['REMOTE_ADDR'] ?? '';
-
-        $entry = json_encode([
-            'ts'     => date('c'),
-            'ip'     => $ip,
-            'formId' => $formId,
-            'reason' => $reason,
-        ], JSON_UNESCAPED_SLASHES);
-
-        $written = @error_log($entry . PHP_EOL, 3, $this->getLogPath());
-        if ($written === false) {
-            // Fallback: write to PHP system error log so the entry is never silently lost
-            error_log('[ynfinite-form-security] ' . $entry);
-        }
-    }
-
-    /**
-     * Returns the path to the security audit log file.
-     * Overrideable in tests to avoid real disk I/O.
-     */
-    protected function getLogPath(): string
-    {
-        // SendFormService lives at src/Domain/Request/Service/ — 4 levels up = project root
-        return dirname(__DIR__, 4) . '/tmp/form_security.log';
     }
 
     protected function securityCheck($request) 
