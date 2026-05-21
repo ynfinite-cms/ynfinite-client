@@ -26,10 +26,10 @@ class FormSecurityLog
 
         $data = [
             'ts'     => date('c'),
+            'reason' => $reason,
+            'formId' => $formId,
             'ip'     => $ip,
             'ua'     => $ua,
-            'formId' => $formId,
-            'reason' => $reason,
         ];
 
         if ($url !== '') {
