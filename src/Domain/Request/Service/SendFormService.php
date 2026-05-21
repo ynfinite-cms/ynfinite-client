@@ -195,29 +195,27 @@ class SendFormService extends RequestService
     }
 
     /**
-     * Session-based synchronizer token validation (CSRF).
+     * Double-submit cookie CSRF validation.
      *
-     * `_yn_csrf_token(form)` in Twig generates a unique token per form per page
-     * load, stores it in $_SESSION['_yn_csrf'][$formId], and renders it as a
-     * hidden `<input name="_csrf_token">` automatically — no manual template work.
-     * JS submits it via FormData without any extra code.
+     * JS ensures the `ynfinite-csrf-protection` cookie always exists (set by
+     * CsrfCookieMiddleware on PHP-served pages, or generated client-side by
+     * ensureCsrfCookie() when the page is served from a static cache). Before
+     * submitting, JS copies the cookie value into the hidden `_csrf_token` input.
      *
      * Why this is unforgeable:
-     *   - The token is random and lives only in the server-side session.
-     *   - A bot cannot compute or guess a valid token without a real page load.
-     *   - Each page load overwrites the stored token, so old tokens are rejected.
-     *   - The token differs per form (keyed by formId) and per reload.
+     *   - A cross-origin attacker cannot read the victim's cookie (same-origin policy).
+     *   - SameSite=Lax prevents the cookie from being sent with cross-site POST requests.
+     *   - Matching cookie and body field cannot be forged without cookie read access.
      *
      * Returns an error array on failure, null on pass.
      */
     protected function validateCsrfToken(ServerRequestInterface $request): ?array
     {
-        $body      = $request->getParsedBody();
-        $formId    = is_array($body) ? ($body['formId'] ?? '') : '';
-        $submitted = is_array($body) ? ($body['_csrf_token'] ?? '') : '';
-        $stored    = $_SESSION['_yn_csrf'][$formId] ?? '';
+        $body        = $request->getParsedBody();
+        $submitted   = is_array($body) ? ($body['_csrf_token'] ?? '') : '';
+        $cookieToken = $request->getCookieParams()['ynfinite-csrf-protection'] ?? '';
 
-        if ($submitted === '' || $stored === '' || !hash_equals($stored, $submitted)) {
+        if ($submitted === '' || $cookieToken === '' || !hash_equals($cookieToken, $submitted)) {
             return [
                 'type'    => 'error',
                 'message' => 'Invalid or missing CSRF token. Please reload the page and try again.',

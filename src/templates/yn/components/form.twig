@@ -43,7 +43,7 @@
 >
 	<fieldset>
 	    <legend style="display: none;">{{ 'yn_contactForm'|trans }}</legend>
-		<input type="hidden" name="_csrf_token" value="{{ _yn_csrf_token(form) }}">
+		<input type="hidden" name="_csrf_token" value="">
 		{% if form.method != "get" %}
 			{% set requiredToken = _yn_required_fields_token(form) %}
 			<label style="display: none !important;" tabindex="-1" aria-hidden="true" for="yn_confirm_email">{{ 'yn_confirmEmail'|trans }}</label>
@@ -53,7 +53,7 @@
 			<input type="hidden" value="{{_ynfinite.languages.current}}" name="formLanguage">
 			<input type="hidden" name="yn_required_fields_token" value="{{ requiredToken }}">
 			{% if form.settings.noBotProtection %}
-				<input type="hidden" name="yn_nobot_token" value="{{ _yn_nobot_token(form) }}">
+				<input type="hidden" name="yn_nobot_token" value="{{ _yn_nobot_token(form._id) }}">
 			{% endif %}
 		{% endif %}
 		{% if section._id %}

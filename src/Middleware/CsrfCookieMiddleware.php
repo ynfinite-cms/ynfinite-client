@@ -18,8 +18,8 @@ use Psr\Http\Server\RequestHandlerInterface;
  *   - Honeypot value:           yn_confirm_email must equal the cookie value
  *   - noBotProtection derivation: HMAC-SHA256(formId:nobot:csrfToken, apiKey)
  *
- * CSRF protection itself is handled by a session-based synchronizer token
- * (_yn_csrf_token Twig function + validateCsrfToken in SendFormService).
+ * CSRF protection itself uses the double-submit cookie pattern: JS copies this
+ * cookie value into the hidden _csrf_token form field; PHP validates they match.
  */
 final class CsrfCookieMiddleware implements MiddlewareInterface
 {

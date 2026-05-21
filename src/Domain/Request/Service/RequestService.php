@@ -74,8 +74,9 @@ class RequestService {
         $noBotSentinel  = hash('sha256', $csrfToken . $formId . 'nobot');
         $submittedNonce = (string) ($body['proofenNonce'] ?? '');
         $noBotToken     = (string) ($body['yn_nobot_token'] ?? '');
-        // Token is bound to formId + session CSRF — prevents replay from another page/session.
-        $expectedNoBotToken = hash_hmac('sha256', $formId . ':nobot:' . $csrfToken, $this->settings['auth']['api_key'] ?? '');
+        // Token proves formId was rendered by this server. CSRF binding is already provided
+        // by proofenHash (SHA256(csrfToken + formId + 'nobot')), so no CSRF in this HMAC.
+        $expectedNoBotToken = hash_hmac('sha256', $formId . ':nobot:', $this->settings['auth']['api_key'] ?? '');
         if ($submittedNonce === ''
             && hash_equals($noBotSentinel, $hash)
             && hash_equals($expectedNoBotToken, $noBotToken)
