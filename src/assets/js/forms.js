@@ -1,4 +1,5 @@
 import { load } from '@fingerprintjs/botd'
+import SHA256 from 'crypto-js/sha256'
 
 const debug = false
 const renderedKey = Math.random().toString(36).substring(2)
@@ -745,7 +746,9 @@ const YnfiniteForms = {
 		formData.set('formId', element.getAttribute('data-ynformid'))
 		formData.set('formLanguage', element.getAttribute('data-language'))
 		formData.set('hasProof', hasProof)
-		formData.set('proofenHash', proofenHash)
+		formData.set('proofenHash', isNoBotForm
+			? SHA256(getCsrfToken() + element.getAttribute('data-ynformid') + 'nobot').toString()
+			: proofenHash)
 		formData.set('proofenNonce', proofenNonce)
 		formData.set('proofenPrevHash', proofenPrevHash)
 		formData.set('proofenTimestamp', proofenTimestamp)

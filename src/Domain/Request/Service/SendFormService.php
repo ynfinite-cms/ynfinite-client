@@ -186,7 +186,7 @@ class SendFormService extends RequestService
                 "type"    => 'error',
                 "success" => false,
                 "message" => 'Security check failed.',
-                "rendered" => "The form has no proof that is was sent by a human. Sorry for you inconvenience."
+                "rendered" => "The form has no proof that it was sent by a human. Sorry for the inconvenience."
             );
                
             return false;

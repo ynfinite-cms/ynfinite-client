@@ -60,7 +60,7 @@ class RequestService {
         }
 
         if(!$body["hasProof"] || !$body["proofenHash"]) {
-            throw new Exception("The form has no proof that is was sent by a human. Sorry for you inconvenience.");
+            throw new Exception("The form has no proof that it was sent by a human. Sorry for the inconvenience.");
         }
 
         $hash      = (string) $body["proofenHash"];
