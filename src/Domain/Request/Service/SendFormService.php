@@ -33,45 +33,50 @@ class SendFormService extends RequestService
 
         FormSecurityLog::cleanup();
 
-        // --- Layer 1: CSRF double-submit cookie ---
-        $csrfError = $this->validateCsrfToken($request);
-        if ($csrfError !== null) {
-            FormSecurityLog::write($request, 'csrf');
-            return $csrfError;
-        }
-
-        // --- Layer 2: Soft Origin header check ---
-        $originError = $this->validateOrigin($request);
-        if ($originError !== null) {
-            FormSecurityLog::write($request, 'origin');
-            return $originError;
-        }
-
-        // --- Layer 3: Session-based rate limiting ---
-        $rateLimitError = $this->checkRateLimit($request);
-        if ($rateLimitError !== null) {
-            FormSecurityLog::write($request, 'rate_limit');
-            return $rateLimitError;
-        }
-
         // Check the form's own method field (sent by JS as 'post'/'get'),
-        // NOT $postBody['method'] which is always "POST" (the HTTP method).
+        // NOT the HTTP method which is always POST for this endpoint.
         $parsedBody = $request->getParsedBody();
         $formMethod = strtolower(is_array($parsedBody) ? ($parsedBody['method'] ?? 'post') : 'post');
 
-        if ($formMethod === 'post' && !$this->securityCheck($request)) {
-            FormSecurityLog::write($request, 'honeypot');
-            return $this->securityError;
-        }
-
-        if ($formMethod === 'post' && !$this->validateRequiredFields($request)) {
-            return array(
-                "type"    => 'error',
-                'message' => 'Please fill in all required fields.'
-            );
-        }
-        
+        // All bot-protection validation and logging applies only to send/contact forms (method: post).
+        // Async GET filter forms also reach this endpoint but must bypass all security checks.
         if ($formMethod === 'post') {
+            // --- Layer 1: CSRF double-submit cookie ---
+            $csrfError = $this->validateCsrfToken($request);
+            if ($csrfError !== null) {
+                FormSecurityLog::write($request, 'csrf');
+                return $csrfError;
+            }
+
+            // --- Layer 2: Soft Origin header check ---
+            $originError = $this->validateOrigin($request);
+            if ($originError !== null) {
+                FormSecurityLog::write($request, 'origin');
+                return $originError;
+            }
+
+            // --- Layer 3: Session-based rate limiting ---
+            $rateLimitError = $this->checkRateLimit($request);
+            if ($rateLimitError !== null) {
+                FormSecurityLog::write($request, 'rate_limit');
+                return $rateLimitError;
+            }
+
+            // --- Layer 4: Honeypot ---
+            if (!$this->securityCheck($request)) {
+                FormSecurityLog::write($request, 'honeypot');
+                return $this->securityError;
+            }
+
+            // --- Layer 5: Required fields ---
+            if (!$this->validateRequiredFields($request)) {
+                return array(
+                    "type"    => 'error',
+                    'message' => 'Please fill in all required fields.'
+                );
+            }
+
+            // --- Layer 6: Proof-of-Work ---
             try {
                 $this->checkPostProof($request);
             } catch (\Exception $e) {
@@ -81,9 +86,9 @@ class SendFormService extends RequestService
                     'message' => 'Security check failed. Please reload the page and try again.',
                 ];
             }
-        }
 
-        FormSecurityLog::write($request, 'allowed');
+            FormSecurityLog::write($request, 'allowed');
+        }
 
         $response = $this->request(trim($path), $this->settings["services"]["form"], $postBody, $jsonResponse);
         $statusCode = $response["statusCode"];

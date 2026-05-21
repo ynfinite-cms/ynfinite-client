@@ -603,7 +603,7 @@ const YnfiniteForms = {
 		// the bot because PHP will reject any submission with an invalid HMAC.
 		const isNoBotForm = !!element.querySelector('input[name="yn_nobot_token"]')
 
-		if (!captchaExists && !isNoBotForm) {
+		if (!captchaExists && !isNoBotForm && method !== 'get') {
 			checkFocus(element)
 			checkTryTypingConsistency()
 
@@ -694,7 +694,7 @@ const YnfiniteForms = {
 			}
 		}
 
-		if (!isNoBotForm && botScore >= 100) {
+		if (!isNoBotForm && method !== 'get' && botScore >= 100) {
 			formSubmitButton.classList.remove('yn-loader')
 			formSubmitButton.style.removeProperty('padding-left')
 			formSubmitButton.style.borderColor = 'var(--error, red)'
