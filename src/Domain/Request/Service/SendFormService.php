@@ -42,9 +42,9 @@ class SendFormService extends RequestService
         // Async GET filter forms also reach this endpoint but must bypass all security checks.
         if ($formMethod === 'post') {
             // --- Layer 1: CSRF double-submit cookie ---
+            // Logging is handled inside validateCsrfToken() with a specific sub-reason.
             $csrfError = $this->validateCsrfToken($request);
             if ($csrfError !== null) {
-                FormSecurityLog::write($request, 'csrf');
                 return $csrfError;
             }
 
@@ -197,10 +197,10 @@ class SendFormService extends RequestService
     /**
      * Double-submit cookie CSRF validation.
      *
-     * JS ensures the `ynfinite-csrf-protection` cookie always exists (set by
-     * CsrfCookieMiddleware on PHP-served pages, or generated client-side by
-     * ensureCsrfCookie() when the page is served from a static cache). Before
-     * submitting, JS copies the cookie value into the hidden `_csrf_token` input.
+     * PHP always sets the `ynfinite-csrf-protection` cookie: CsrfCookieMiddleware
+     * handles PHP-rendered pages; CsrfCookieMiddleware::ensureCookie() handles
+     * static-cache hits in index.php. Before submitting, JS copies the cookie
+     * value into the hidden `_csrf_token` input.
      *
      * Why this is unforgeable:
      *   - A cross-origin attacker cannot read the victim's cookie (same-origin policy).
@@ -216,6 +216,18 @@ class SendFormService extends RequestService
         $cookieToken = $request->getCookieParams()['ynfinite-csrf-protection'] ?? '';
 
         if ($submitted === '' || $cookieToken === '' || !hash_equals($cookieToken, $submitted)) {
+            // Log a specific sub-reason so production logs can distinguish the
+            // three failure modes without changing the user-facing message.
+            if ($submitted === '' && $cookieToken === '') {
+                $subReason = 'csrf_both_missing';
+            } elseif ($submitted === '') {
+                $subReason = 'csrf_no_token';
+            } elseif ($cookieToken === '') {
+                $subReason = 'csrf_no_cookie';
+            } else {
+                $subReason = 'csrf_mismatch';
+            }
+            FormSecurityLog::write($request, $subReason);
             return [
                 'type'    => 'error',
                 'message' => 'Invalid or missing CSRF token. Please reload the page and try again.',

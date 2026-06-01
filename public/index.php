@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Utils\Cache\StaticCache;
+use App\Middleware\CsrfCookieMiddleware;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__. '/../');
 $dotenv->load();
@@ -10,6 +11,8 @@ $dotenv->load();
 if($_ENV['STATIC_PAGES'] !== "false" && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $cachedPage = StaticCache::getCache("PAGE");
     if ($cachedPage) {
+        // Set CSRF cookie via PHP even on cache hits — no JS involvement needed.
+        CsrfCookieMiddleware::ensureCookie();
         echo $cachedPage;
         exit;
     } 

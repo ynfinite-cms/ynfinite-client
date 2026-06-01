@@ -25,7 +25,7 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
 {
     private const COOKIE_NAME   = 'ynfinite-csrf-protection';
     private const COOKIE_LENGTH = 32; // bytes → 64 hex chars
-    private const COOKIE_TTL    = 3600; // 1 hour
+    private const COOKIE_TTL    = 86400; // 24 hours
 
     public function process(
         ServerRequestInterface  $request,
@@ -34,7 +34,7 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
         // If the cookie is already present and is valid, reuse it.
         // Otherwise generate a fresh random token.
         $existing = $request->getCookieParams()[self::COOKIE_NAME] ?? '';
-        if (!$this->isValidToken($existing)) {
+        if (!self::isValidToken($existing)) {
             $existing = bin2hex(random_bytes(self::COOKIE_LENGTH));
         }
 
@@ -43,26 +43,48 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
 
         $response = $handler->handle($request);
 
-        // Only set the cookie when not already present (avoids overwriting a
-        // valid cookie on every request and saves header overhead)
-        $currentCookies = $request->getCookieParams();
-        if (empty($currentCookies[self::COOKIE_NAME])) {
-            $secure   = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-            $expire   = time() + self::COOKIE_TTL;
-            $flags    = '; Path=/; SameSite=Lax';
-            if ($secure) {
-                $flags .= '; Secure';
-            }
-            $response = $response->withAddedHeader(
-                'Set-Cookie',
-                self::COOKIE_NAME . '=' . $existing . '; Expires=' . gmdate('D, d M Y H:i:s T', $expire) . $flags
-            );
+        // Always refresh the cookie TTL on every PHP-handled response.
+        // Static-cached pages bypass this middleware — ensureCookie() below
+        // is called from index.php before the cached page is echoed.
+        $secure  = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $expire  = time() + self::COOKIE_TTL;
+        $flags   = '; Path=/; SameSite=Lax';
+        if ($secure) {
+            $flags .= '; Secure';
         }
+        $response = $response->withAddedHeader(
+            'Set-Cookie',
+            self::COOKIE_NAME . '=' . $existing . '; Expires=' . gmdate('D, d M Y H:i:s T', $expire) . $flags
+        );
 
         return $response;
     }
 
-    private function isValidToken(string $token): bool
+    /**
+     * Sets (or refreshes) the CSRF cookie for static-cache hits in public/index.php,
+     * which exit before Slim boots and therefore bypass process() entirely.
+     */
+    public static function ensureCookie(): void
+    {
+        $existing = $_COOKIE[self::COOKIE_NAME] ?? '';
+        $token    = self::isValidToken($existing)
+            ? $existing
+            : bin2hex(random_bytes(self::COOKIE_LENGTH));
+
+        $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        setcookie(self::COOKIE_NAME, $token, [
+            'expires'  => time() + self::COOKIE_TTL,
+            'path'     => '/',
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+            'httponly' => false,
+        ]);
+        // Populate $_COOKIE immediately so any code further down in the same
+        // request (e.g. logging) can read the token without a round-trip.
+        $_COOKIE[self::COOKIE_NAME] = $token;
+    }
+
+    private static function isValidToken(string $token): bool
     {
         return strlen($token) === self::COOKIE_LENGTH * 2
             && ctype_xdigit($token);

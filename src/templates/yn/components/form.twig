@@ -43,7 +43,6 @@
 >
 	<fieldset>
 	    <legend style="display: none;">{{ 'yn_contactForm'|trans }}</legend>
-		<input type="hidden" name="_csrf_token" value="">
 		{% if form.method != "get" %}
 			{% set requiredToken = _yn_required_fields_token(form) %}
 			<label style="display: none !important;" tabindex="-1" aria-hidden="true" for="yn_confirm_email">{{ 'yn_confirmEmail'|trans }}</label>

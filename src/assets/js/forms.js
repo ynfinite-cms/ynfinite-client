@@ -24,22 +24,6 @@ function getCsrfToken() {
 	return match ? decodeURIComponent(match[1]) : ''
 }
 
-/**
- * Ensures the `ynfinite-csrf-protection` cookie exists, generating it client-side
- * if the page was served from a static cache (no PHP ran, no Set-Cookie header).
- * Uses the same 64-char hex format as CsrfCookieMiddleware.
- */
-function ensureCsrfCookie() {
-	if (getCsrfToken()) return
-	const bytes = new Uint8Array(32)
-	crypto.getRandomValues(bytes)
-	const token = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
-	const expires = new Date(Date.now() + 3600 * 1000).toUTCString()
-	const secure = location.protocol === 'https:' ? '; Secure' : ''
-	document.cookie = `ynfinite-csrf-protection=${token}; expires=${expires}; path=/; SameSite=Lax${secure}`
-}
-ensureCsrfCookie()
-
 function dontFocusHoneypots() {
 	const honeypots = document.querySelectorAll('input[name="yn_confirm_name"], input[name="yn_confirm_email"], [name="consents[]_v2"]')
 
@@ -737,10 +721,8 @@ const YnfiniteForms = {
 		const ynBeforeAsyncChangeData = new Event('onPreAsyncChangeData')
 		element.dispatchEvent(ynBeforeAsyncChangeData)
 
-		const csrfInput = element.querySelector('[name="_csrf_token"]')
-		if (csrfInput) csrfInput.value = getCsrfToken()
-
 		const formData = new FormData(element)
+		formData.set('_csrf_token', getCsrfToken())
 		formData.set('events', element.getAttribute('data-events'))
 		formData.set('method', method)
 		formData.set('formId', element.getAttribute('data-ynformid'))
