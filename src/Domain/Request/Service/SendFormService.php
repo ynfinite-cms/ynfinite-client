@@ -38,16 +38,19 @@ class SendFormService extends RequestService
         $parsedBody = $request->getParsedBody();
         $formMethod = strtolower(is_array($parsedBody) ? ($parsedBody['method'] ?? 'post') : 'post');
 
-        // All bot-protection validation and logging applies only to send/contact forms (method: post).
-        // Async GET filter forms also reach this endpoint but must bypass all security checks.
-        if ($formMethod === 'post') {
-            // --- Layer 1: CSRF double-submit cookie ---
-            // Logging is handled inside validateCsrfToken() with a specific sub-reason.
-            $csrfError = $this->validateCsrfToken($request);
-            if ($csrfError !== null) {
-                return $csrfError;
-            }
+        // --- Layer 1: CSRF double-submit cookie (all forms) ---
+        // JS sends _csrf_token unconditionally for every form type, including filter
+        // forms (method=get). Validating here closes the bypass where a bot could
+        // send method=get in the POST body to skip all security layers.
+        // Logging is handled inside validateCsrfToken() with a specific sub-reason.
+        $csrfError = $this->validateCsrfToken($request);
+        if ($csrfError !== null) {
+            return $csrfError;
+        }
 
+        // Layers 2–6 apply only to contact forms (method: post).
+        // Filter forms (method: get) are already gated by CSRF above.
+        if ($formMethod === 'post') {
             // --- Layer 2: Soft Origin header check ---
             $originError = $this->validateOrigin($request);
             if ($originError !== null) {
@@ -61,7 +64,7 @@ class SendFormService extends RequestService
                 FormSecurityLog::write($request, 'rate_limit');
                 return $rateLimitError;
             }
-
+            
             // --- Layer 4: Honeypot ---
             if (!$this->securityCheck($request)) {
                 FormSecurityLog::write($request, 'honeypot');
