@@ -48,6 +48,15 @@ class SendFormService extends RequestService
             return $csrfError;
         }
 
+        // Verify the server-signed method token so that tampering with the
+        // form's method attribute (e.g. post → get via DevTools) is detected.
+        // Missing token = page was cached before this feature; allow but log.
+        // Mismatched token = tampering; block.
+        $methodError = $this->validateFormMethod($request, $formMethod);
+        if ($methodError !== null) {
+            return $methodError;
+        }
+
         // Layers 2–6 apply only to contact forms (method: post).
         // Filter forms (method: get) are already gated by CSRF above.
         if ($formMethod === 'post') {
@@ -64,7 +73,7 @@ class SendFormService extends RequestService
                 FormSecurityLog::write($request, 'rate_limit');
                 return $rateLimitError;
             }
-            
+
             // --- Layer 4: Honeypot ---
             if (!$this->securityCheck($request)) {
                 FormSecurityLog::write($request, 'honeypot');
@@ -195,6 +204,63 @@ class SendFormService extends RequestService
             return false;
         }
         return true;
+    }
+
+    /**
+     * Verifies the server-signed form method token.
+     *
+     * At render time PHP signs {formId, method} with an HMAC and embeds it as
+     * `yn_form_method_token`. On submission the signed method must match the
+     * `method` field in the POST body, preventing a DevTools or bot bypass
+     * where method is flipped from 'post' to 'get' to skip security layers.
+     *
+     * Missing token (pre-feature static cache) → log + allow (soft enforcement).
+     * Invalid signature or method mismatch → block.
+     *
+     * Returns an error array on failure, null on pass.
+     */
+    protected function validateFormMethod(ServerRequestInterface $request, string $formMethod): ?array
+    {
+        $body  = $request->getParsedBody();
+        $token = is_array($body) ? ($body['yn_form_method_token'] ?? '') : '';
+
+        if ($token === '') {
+            // Page was cached before this feature was deployed; allow through.
+            FormSecurityLog::write($request, 'method_token_missing');
+            return null;
+        }
+
+        $raw = base64_decode($token, true);
+        if ($raw === false) {
+            FormSecurityLog::write($request, 'method_tampered');
+            return ['type' => 'error', 'message' => 'Security check failed. Please reload the page and try again.'];
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || !isset($decoded['p'], $decoded['s'])) {
+            FormSecurityLog::write($request, 'method_tampered');
+            return ['type' => 'error', 'message' => 'Security check failed. Please reload the page and try again.'];
+        }
+
+        $secret      = $this->settings['auth']['api_key'] ?? '';
+        $expectedSig = hash_hmac('sha256', $decoded['p'], $secret);
+        if (!hash_equals($expectedSig, $decoded['s'])) {
+            FormSecurityLog::write($request, 'method_tampered');
+            return ['type' => 'error', 'message' => 'Security check failed. Please reload the page and try again.'];
+        }
+
+        $payload = json_decode($decoded['p'], true);
+        if (!is_array($payload) || !isset($payload['method'])) {
+            FormSecurityLog::write($request, 'method_tampered');
+            return ['type' => 'error', 'message' => 'Security check failed. Please reload the page and try again.'];
+        }
+
+        if (strtolower($payload['method']) !== $formMethod) {
+            FormSecurityLog::write($request, 'method_tampered');
+            return ['type' => 'error', 'message' => 'Security check failed. Please reload the page and try again.'];
+        }
+
+        return null;
     }
 
     /**

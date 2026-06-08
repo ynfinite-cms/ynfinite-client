@@ -23,7 +23,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final class CsrfCookieMiddleware implements MiddlewareInterface
 {
-    private const COOKIE_NAME   = 'ynfinite-csrf-protection';
+    public const  COOKIE_NAME   = 'ynfinite-csrf-protection';
     private const COOKIE_LENGTH = 32; // bytes → 64 hex chars
     private const COOKIE_TTL    = 86400; // 24 hours
 

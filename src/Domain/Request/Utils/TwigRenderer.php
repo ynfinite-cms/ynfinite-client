@@ -161,6 +161,26 @@ final class TwigRenderer
 
         $this->twig->addFunction($_yn_required_fields_token);
 
+        // Server-signs the form method so PHP can reject submissions where the
+        // method field in the POST body was tampered (e.g. changed from 'post'
+        // to 'get' via DevTools to bypass the security layer gate).
+        // No timestamp — method never changes per form, and the token is shared
+        // across all users of a static-cached page.
+        $_yn_form_method_token = new \Twig\TwigFunction('_yn_form_method_token', function ($form) {
+            $payload = json_encode([
+                'formId' => $form['_id'] ?? '',
+                'method' => $form['method'] ?? 'post',
+            ]);
+            $secret = $this->settings['ynfinite']['auth']['api_key'] ?? '';
+            $sig    = hash_hmac('sha256', $payload, $secret);
+            return htmlspecialchars(
+                base64_encode(json_encode(['p' => $payload, 's' => $sig])),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+        }, ['is_safe' => ['html']]);
+        $this->twig->addFunction($_yn_form_method_token);
+
         // Server-signs the noBotProtection sentinel so bots cannot fake the nobot submission path.
         // Not CSRF-bound here — proofenHash already covers that; this token only proves the form
         // was rendered by this server for this specific formId.
