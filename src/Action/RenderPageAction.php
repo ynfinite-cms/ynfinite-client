@@ -60,23 +60,42 @@ final class RenderPageAction
             }
             
             $data = $this->requestPageService->getPage($request);
+
+            if (isset($data['type']) && in_array($data['type'], ['maintenance', 'offline'], true)) {
+                $maintenanceStatus = isset($data['statusCode']) ? (int) $data['statusCode'] : 503;
+                $maintenanceMessage = $data['message'] ?? 'Service temporarily unavailable';
+                $lang = $this->resolveRequestLanguage();
+                $rendered = $this->renderSystemTemplate('maintenance.twig', [
+                    'message'  => $maintenanceMessage,
+                    'statusCode' => $maintenanceStatus,
+                    'headline' => $this->getMaintenanceTranslation('yn_maintenanceHeadline', $lang, "We'll be back shortly."),
+                    'badge'    => $this->getMaintenanceTranslation('yn_maintenanceBadge', $lang, 'Maintenance in progress'),
+                ]);
+
+                if ($rendered !== null) {
+                    $response->getBody()->write($rendered);
+                } else {
+                    $response->getBody()->write($maintenanceMessage);
+                }
+
+                return $response->withStatus($maintenanceStatus);
+            }
             
             if ((isset($data['type']) && $data['type'] === 'error') || !isset($data['type'])) {
-                $errorTemplatePath = __DIR__ . '/../templates/yn/error.twig';
-                if (file_exists($errorTemplatePath)) {
-                    $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../templates/yn');
-                    $twig = new \Twig\Environment($loader);
-                    $template = $twig->load('error.twig');
-                    $errorStatus = isset($data['statusCode']) ? $data['statusCode'] : 500;
-                    $response->getBody()->write($template->render([
-                        'message' => $data['message'],
-                        'statusCode' => $errorStatus
-                    ]));
+                $errorStatus = isset($data['statusCode']) ? (int) $data['statusCode'] : 500;
+                $errorMessage = $data['message'] ?? 'An unexpected error occurred.';
+                $rendered = $this->renderSystemTemplate('error.twig', [
+                    'message' => $errorMessage,
+                    'statusCode' => $errorStatus,
+                ]);
+
+                if ($rendered !== null) {
+                    $response->getBody()->write($rendered);
                     return $response->withStatus($errorStatus);
-                } else {
-                    $response->getBody()->write('An error occurred: ' . $data['message']);
                 }
-                return $response->withStatus(500);
+
+                $response->getBody()->write('An error occurred: ' . $errorMessage);
+                return $response->withStatus($errorStatus);
             }
 
             if (isset($data['type']) && $data['type'] === 'redirect') {
@@ -124,6 +143,71 @@ final class RenderPageAction
 
         // This should never be reached due to explicit returns above
         return $response->withStatus(500);
+    }
+
+    private function resolveRequestLanguage(): string
+    {
+        // Try to extract a 2-letter language prefix from the URL path (e.g. /de/... or /en/...)
+        $path = $_SERVER['REQUEST_URI'] ?? '/';
+        if (preg_match('#^/([a-z]{2})(/|$)#', $path, $m)) {
+            return $m[1];
+        }
+
+        // Fall back to the first language in the Accept-Language header
+        $acceptLang = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+        if ($acceptLang && preg_match('/^([a-z]{2})/i', $acceptLang, $m)) {
+            return strtolower($m[1]);
+        }
+
+        return 'de';
+    }
+
+    private function getMaintenanceTranslation(string $key, string $lang, string $fallback): string
+    {
+        $localeDir = __DIR__ . '/../locale/';
+
+        foreach ([$lang, 'de', 'en'] as $try) {
+            $file = $localeDir . 'lang_' . $try . '.ini';
+            if (file_exists($file)) {
+                $strings = parse_ini_file($file);
+                if ($strings !== false && isset($strings[$key])) {
+                    return $strings[$key];
+                }
+            }
+        }
+
+        return $fallback;
+    }
+
+    private function renderSystemTemplate(string $templateName, array $context): ?string
+    {
+        $templatePath = $this->resolveSystemTemplatePath($templateName);
+
+        if ($templatePath === null) {
+            return null;
+        }
+
+        $loader = new \Twig\Loader\FilesystemLoader(dirname($templatePath));
+        $twig = new \Twig\Environment($loader);
+
+        return $twig->render(basename($templatePath), $context);
+    }
+
+    private function resolveSystemTemplatePath(string $templateName): ?string
+    {
+        $candidates = [
+            getcwd() . '/../templates/' . $templateName,
+            getcwd() . '/../templates/yn/' . $templateName,
+            __DIR__ . '/../templates/yn/' . $templateName,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     private function handleException($e, $response) {
