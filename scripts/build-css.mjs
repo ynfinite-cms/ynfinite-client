@@ -21,7 +21,7 @@ const outputDir = resolve(__dirname, '../public/assets/css')
 // Dynamically detect SCSS files to compile
 function getAvailableScssFiles() {
 	const scssFiles = []
-	
+
 	try {
 		const files = readdirSync(inputDir)
 		for (const file of files) {
@@ -34,7 +34,7 @@ function getAvailableScssFiles() {
 	} catch (error) {
 		console.error('❌ Error reading SCSS directory:', error.message)
 	}
-	
+
 	return scssFiles
 }
 
@@ -90,7 +90,7 @@ async function compileSCSS(filename) {
 		// Compile SCSS with suppressed warnings
 		const result = sass.compile(inputFile, {
 			sourceMap: true,
-			style: 'expanded',
+			style: 'compressed',
 			loadPaths: [resolve(__dirname, '../node_modules'), resolve(__dirname, '../development/assets/scss')],
 			quietDeps: true,
 			// Control warning verbosity based on command line args
@@ -108,15 +108,15 @@ async function compileSCSS(filename) {
 								const shouldSuppress = message.includes('Sass @import rules are deprecated') || message.includes('Global built-in functions are deprecated') || message.includes('repetitive deprecation warnings omitted') || isFromFontAwesome
 
 								if (!shouldSuppress) {
-									const fileName = url ? ` (${url.split('/' ).pop()})` : ''
-									console.warn(`⚠️  SCSS${fileName}:`, message.split('\n' )[0])
+									const fileName = url ? ` (${url.split('/').pop()})` : ''
+									console.warn(`⚠️  SCSS${fileName}:`, message.split('\n')[0])
 								}
 							} catch (error) {
 								// If there's any error in the logger, just suppress the warning
 							}
 						},
 						debug: () => {},
-				  },
+					},
 		})
 
 		// Process with PostCSS/Autoprefixer
@@ -170,7 +170,7 @@ function startWatcher() {
 
 	watcher.on('change', async (filePath) => {
 		// Determine which main SCSS file to recompile
-		const changedFile = filePath.replace(inputDir, '').replace(/\\/g, '/' ).substring(1)
+		const changedFile = filePath.replace(inputDir, '').replace(/\\/g, '/').substring(1)
 
 		// If it's a main file, compile just that one
 		for (const file of scssFiles) {
