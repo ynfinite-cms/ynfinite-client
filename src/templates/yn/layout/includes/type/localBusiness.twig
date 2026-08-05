@@ -5,31 +5,31 @@
 			,"@type": "{{_yn_schema.variant|raw}}"
 	  	{% endif %}
 	  	{% if _yn_schema.name %}
-    		,"name": "{{_yn_schema.name|raw}}"
+    		,"name": {{_yn_schema.name|striptags|json_encode|raw}}
 	  	{% endif %}
 	  	{% if _yn_schema.image %}
     		,"image": "{{_yn_schema.image[0].path|raw}}"
 	  	{% endif %}
 	  	{% if _yn_schema.url %}
-    		,"url": "{{_yn_schema.url|raw}}"
+    		,"url": {{_yn_schema.url|striptags|json_encode|raw}}
 	  	{% endif %}
 	  	{% if _yn_schema.phone %}
-    		,"telephone": "{{_yn_schema.phone|raw}}"
+    		,"telephone": {{_yn_schema.phone|striptags|json_encode|raw}}
 	  	{% endif %}
 		{% if _yn_schema.street or _yn_schema.city or _yn_schema.zip or _yn_schema.country %}
 			,"address": {
 				"@type": "PostalAddress"
 				{% if _yn_schema.street %}
-					,"streetAddress": "{{_yn_schema.street|raw}}"
+					,"streetAddress": {{_yn_schema.street|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.city %}
-					,"addressLocality": "{{_yn_schema.city|raw}}"
+					,"addressLocality": {{_yn_schema.city|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.zip %}
-					,"postalCode": "{{_yn_schema.zip|raw}}"
+					,"postalCode": {{_yn_schema.zip|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.country %}
-					,"addressCountry": "{{_yn_schema.country|raw}}"
+					,"addressCountry": {{_yn_schema.country|striptags|json_encode|raw}}
 				{% endif %}
 			}
 		{% endif %}
@@ -64,25 +64,25 @@
 				{% for _yn_review in _yn_schema.review %}
 					{
 						"@type": "Review",
-						"name": "{{_yn_review.name|raw}}",
+						"name": {{_yn_review.name|striptags|json_encode|raw}},
 						"reviewRating": {
 							"@type": "Rating",
-							"ratingValue": "{{_yn_review.rating|raw}}"
+							"ratingValue": {{_yn_review.rating|striptags|json_encode|raw}}
 						}
 						{% if _yn_review.author %}
 							,"author": {
 								"@type": "Person",
-								"name": "{{_yn_review.author|raw}}"
+								"name": {{_yn_review.author|striptags|json_encode|raw}}
 							}
 						{% endif %}
 						{% if _yn_review.publisher %}
 							,"publisher": {
 								"@type": "Person",
-								"name": "{{_yn_review.publisher|raw}}"
+								"name": {{_yn_review.publisher|striptags|json_encode|raw}}
 							}
 						{% endif %}
 						{% if _yn_review.text %}
-							,"reviewBody": "{{_yn_review.text|raw}}"
+							,"reviewBody": {{_yn_review.text|striptags|json_encode|raw}}
 						{% endif %}
 					}{% if not loop.last %},{% endif %}
 				{% endfor %}
@@ -92,16 +92,16 @@
 			,"aggregateRating": {
 				"@type": "AggregateRating"
 				{% if _yn_schema.aggregateRatingValue %}
-					,"ratingValue": "{{_yn_schema.aggregateRatingValue|raw}}"
+					,"ratingValue": {{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.numberOfRatings %}
-					,"reviewCount": "{{_yn_schema.numberOfRatings|raw}}"
+					,"reviewCount": {{_yn_schema.numberOfRatings|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.highestValueAllowed %}
-					,"bestRating": "{{_yn_schema.highestValueAllowed|raw}}"
+					,"bestRating": {{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.lowestValueAllowed %}
-					,"worstRating": "{{_yn_schema.lowestValueAllowed|raw}}"
+					,"worstRating": {{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 			}
 		{% endif %}

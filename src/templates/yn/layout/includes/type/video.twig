@@ -3,10 +3,10 @@
     "@context": "https://schema.org",
     "@type": "VideoObject"
     {% if _yn_schema.videoName %}
-        ,"name": "{{_yn_schema.videoName|raw}}"
+        ,"name": {{_yn_schema.videoName|striptags|json_encode|raw}}
     {% endif %}
     {% if _yn_schema.videoDescription %}
-        ,"description": "{{_yn_schema.videoDescription|raw}}"
+        ,"description": {{_yn_schema.videoDescription|striptags|json_encode|raw}}
     {% endif %}
     {% if _yn_schema.videoImage %}
     ,"thumbnailUrl": [

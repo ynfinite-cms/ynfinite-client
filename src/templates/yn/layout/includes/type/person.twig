@@ -3,13 +3,13 @@
         "@context": "https://schema.org/",
         "@type": "Person"
         {% if _yn_schema.firstName %}
-            ,"givenName": "{{_yn_schema.firstName|raw}}"
+            ,"givenName": {{_yn_schema.firstName|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.lastName %}
-            ,"familyName": "{{_yn_schema.lastName|raw}}"
+            ,"familyName": {{_yn_schema.lastName|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.firstName and _yn_schema.lastName %}
-            ,"name": "{{_yn_schema.firstName|raw}} {{ _yn_schema.lastName|raw}}"
+            ,"name": {{ (_yn_schema.firstName ~ ' ' ~ _yn_schema.lastName)|striptags|json_encode|raw }}
         {% endif %}
         {% if _yn_schema.url %}
             ,"url": "{{_yn_schema.url|raw}}"
@@ -21,25 +21,25 @@
 			,"sameAs": [{% for _yn_sameAs in _yn_schema.sameAs %}"{{_yn_sameAs.url|raw}}"{% if not loop.last %},{% endif %}{% endfor %}]
 		{% endif %}
         {% if _yn_schema.jobTitle %}
-            ,"jobTitle": "{{_yn_schema.jobTitle}}"
+            ,"jobTitle": {{_yn_schema.jobTitle|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.company %}
             ,"worksFor": {
                 "@type": "Organization",
-                "name": "{{_yn_schema.company}}"
+                "name": {{_yn_schema.company|striptags|json_encode|raw}}
             }  
         {% endif %}
         {% if _yn_schema.knowsAbout %}
             ,"knowsAbout": [
                 {% for _yn_knowsAbout in _yn_schema.knowsAbout %}
-                    "{{_yn_knowsAbout.text|raw}}"{% if not loop.last %},{% endif %}
+                    {{_yn_knowsAbout.text|striptags|json_encode|raw}}{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
         {% endif %}
         {% if _yn_schema.awards %}
             ,"awards": [
                 {% for _yn_awards in _yn_schema.awards %}
-                    "{{_yn_awards.award|raw}}"{% if not loop.last %},{% endif %}
+                    {{_yn_awards.award|striptags|json_encode|raw}}{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
         {% endif %}
