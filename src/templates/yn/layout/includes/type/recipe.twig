@@ -3,7 +3,7 @@
         "@context": "https://schema.org/", 
         "@type": "Recipe"
         {% if _yn_schema.name %}
-            ,"name": "{{_yn_schema.name|raw}}"
+            ,"name": {{_yn_schema.name|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.image %}
             ,"image": [
@@ -13,15 +13,15 @@
             ]
         {% endif %}
         {% if _yn_schema.description %}
-            ,"description": "{{_yn_schema.description|raw}}"
+            ,"description": {{_yn_schema.description|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.keywords %}
-            ,"keywords": "{{_yn_schema.keywords|raw}}"
+            ,"keywords": {{_yn_schema.keywords|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.creatorName %}
             ,"author": {
                 "@type": "Person",
-                "name": "{{_yn_schema.creatorName|raw}}"
+                "name": {{_yn_schema.creatorName|striptags|json_encode|raw}}
             }
         {% endif %}
         {% if _yn_schema.datePublished %}
@@ -37,15 +37,15 @@
             ,"totalTime": "PT{{_yn_schema.preperation|raw + _yn_schema.cooking|raw}}M" 
         {% endif %}
         {% if _yn_schema.category %}
-            ,"recipeCategory": "{{_yn_schema.category|raw}}" 
+            ,"recipeCategory": {{_yn_schema.category|striptags|json_encode|raw}} 
         {% endif %}
         {% if _yn_schema.servings %}
-            ,"recipeYield": "{{_yn_schema.servings|raw}}" 
+            ,"recipeYield": {{_yn_schema.servings|striptags|json_encode|raw}} 
         {% endif %}
         {% if _yn_schema.ingredient %}
             ,"recipeIngredient": [
                 {% for _yn_ingredient in _yn_schema.ingredient %}
-                    "{{_yn_ingredient.text|raw}}"{% if not loop.last %},{% endif %}
+                    {{_yn_ingredient.text|striptags|json_encode|raw}}{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
         {% endif %}
@@ -55,10 +55,10 @@
                     {
                         "@type": "HowToStep"
                         {% if _yn_steps.name %}
-                            ,"name": "{{_yn_steps.name|raw}}"
+                            ,"name": {{_yn_steps.name|striptags|json_encode|raw}}
                         {% endif %}
                         {% if _yn_steps.text %}
-                            ,"text": "{{_yn_steps.text|raw}}"
+                            ,"text": {{_yn_steps.text|striptags|json_encode|raw}}
                         {% endif %}
                         {% if _yn_steps.url %}
                             ,"url": "{{_yn_steps.url|raw}}"
@@ -74,16 +74,16 @@
 			,"aggregateRating": {
 				"@type": "AggregateRating"
 				{% if _yn_schema.aggregateRatingValue %}
-					,"ratingValue": "{{_yn_schema.aggregateRatingValue|raw}}"
+					,"ratingValue": {{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.numberOfRatings %}
-					,"reviewCount": "{{_yn_schema.numberOfRatings|raw}}"
+					,"reviewCount": {{_yn_schema.numberOfRatings|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.highestValueAllowed %}
-					,"bestRating": "{{_yn_schema.highestValueAllowed|raw}}"
+					,"bestRating": {{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.lowestValueAllowed %}
-					,"worstRating": "{{_yn_schema.lowestValueAllowed|raw}}"
+					,"worstRating": {{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 			},
 		{% endif %}
@@ -92,25 +92,25 @@
 				{% for _yn_review in _yn_schema.review %}
 					{
 						"@type": "Review",
-						"name": "{{_yn_review.name|raw}}",
+						"name": {{_yn_review.name|striptags|json_encode|raw}},
 						"reviewRating": {
 							"@type": "Rating",
-							"ratingValue": "{{_yn_review.rating|raw}}"
+							"ratingValue": {{_yn_review.rating|striptags|json_encode|raw}}
 						}
 						{% if _yn_review.author %}
 							,"author": {
 								"@type": "Person",
-								"name": "{{_yn_review.author|raw}}"
+								"name": {{_yn_review.author|striptags|json_encode|raw}}
 							}
 						{% endif %}
 						{% if _yn_review.publisher %}
 							,"publisher": {
 								"@type": "Person",
-								"name": "{{_yn_review.publisher|raw}}"
+								"name": {{_yn_review.publisher|striptags|json_encode|raw}}
 							}
 						{% endif %}
 						{% if _yn_review.text %}
-							,"reviewBody": "{{_yn_review.text|raw}}"
+							,"reviewBody": {{_yn_review.text|striptags|json_encode|raw}}
 						{% endif %}
 					}{% if not loop.last %},{% endif %}
 				{% endfor %}
@@ -119,10 +119,10 @@
         ,"video": {
             "@type": "VideoObject"
             {% if _yn_schema.videoName %}
-                ,"name": "{{_yn_schema.videoName|raw}}"
+                ,"name": {{_yn_schema.videoName|striptags|json_encode|raw}}
             {% endif %}
             {% if _yn_schema.description %}
-                ,"description": "{{_yn_schema.description|raw}}"
+                ,"description": {{_yn_schema.description|striptags|json_encode|raw}}
             {% endif %}
              {% if _yn_schema.videoImage %}
                 ,"thumbnailUrl": [
