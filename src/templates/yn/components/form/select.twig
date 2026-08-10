@@ -3,7 +3,7 @@
 {% block field %}
 	<select aria-label="{{ field.name }}" data-ynfield="true" id="{{ form.uid }}_{{ field.alias }}_from" name="fields{{ parent }}[{{ field.alias }}]{% if field.multiple %}[]{% endif %}" {% if field.required %}required{% endif %} {% if field.multiple %}multiple{% endif %} {{ field.attributes|raw }} {% if field.disabled %}disabled{% endif %}>
 		{% if field.emptyLabel %}
-			<option value="" selected {% if field.required %}disabled{% endif %}>{{ field.emptyLabel }}</option>
+			<option value="" {% if not field.multiple %}selected{% endif %} {% if field.required %}disabled{% endif %}>{{ field.emptyLabel }}</option>
 		{% endif %}
 		{% for option in field.options %}
 			<option value="{{ option.value }}" {% if option.value and ((field.multiple and option.value in field.value) or (not field.mutiple and option.value == field.value)) %}selected{% endif %}>{{ option.label }}</option>
@@ -13,11 +13,21 @@
 	{% if field.multiple %}
 		<script>
 			setTimeout(function(){
-				document.querySelectorAll("[id='{{ form.uid }}_{{ field.alias }}_from'] option").forEach((option) => {
+				const select = document.querySelector("[id='{{ form.uid }}_{{ field.alias }}_from']")
+
+				if(!select) return
+
+				select.querySelectorAll('option').forEach((option) => {
 					option.addEventListener('mousedown', function (e) {
 						e.preventDefault();
-						option.parentElement.focus();
-						this.selected = !this.selected;
+						select.focus();
+
+						if(this.value){
+							this.selected = !this.selected;
+						} else {
+							[...select.options].forEach((o) => {o.selected = false});
+						}
+
 						return false;
 					}, false );
 				});

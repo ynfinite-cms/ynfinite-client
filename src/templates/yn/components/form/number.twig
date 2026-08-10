@@ -27,6 +27,7 @@
 				value="{{ field.value[0]|default(addValue[0]|default(field.defaultValue)) }}" 
 				
 				{% if field.min %} min="{{ field.min }}" {% endif %} 
+				{% if field.max %} max="{{ field.max }}" {% endif %} 
 				{% if field.step %} step="{{ field.step }}" {% endif %} 
 				{% if field.placeholder %} placeholder="{{ field.placeholder }}" {% endif %} 
 				{% if field.required %} required {% endif %} 
@@ -38,8 +39,8 @@
 				name="fields{{ parent }}[{{ field.alias }}][1]" 
 				value="{{ field.value[1]|default(addValue[1]|default(field.defaultValueRange)) }}" 
 				
-				{% if field.max %} max="{{ field.max }}" {% endif %} 
-				{% if field.step %} step="{{ field.step }}" {% endif %} 
+				{% if field.min %} min="{{ field.min }}" {% endif %} 
+				{% if field.max %} max="{{ field.max }}" {% endif %} 				{% if field.step %} step="{{ field.step }}" {% endif %} 
 				{% if field.placeholderRange %} placeholder="{{ field.placeholderRange }}" {% endif %} 
 				{% if field.required %} required {% endif %} 
 				

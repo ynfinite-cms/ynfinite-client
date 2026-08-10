@@ -3,18 +3,18 @@
     "@context": "https://schema.org/", 
     "@type": "Product"
     {% if _yn_schema.name %}
-        ,"name": "{{_yn_schema.name}}"
+        ,"name": {{_yn_schema.name|striptags|json_encode|raw}}
     {% endif %}
     {% if _yn_schema.image %}
         ,"image": "{{_yn_schema.image[0].path|raw}}"
     {% endif %}
     {% if _yn_schema.description %}
-        ,"description": "{{_yn_schema.description}}"
+        ,"description": {{_yn_schema.description|striptags|json_encode|raw}}
     {% endif %}
     {% if _yn_schema.brandName %}
         ,"brand": {
             "@type": "Brand",
-            "name": "{{_yn_schema.brandName}}"
+            "name": {{_yn_schema.brandName|striptags|json_encode|raw}}
         }
     {% endif %}
     {% if _yn_schema.offerType or _yn_schema.url or _yn_schema.currency or _yn_schema.lowPrice or _yn_schema.highPrice or _yn_schema.offerCount or _yn_schema.price or _yn_schema.priceValidUntil or _yn_schema.availability or _yn_schema.itemCondition %}
@@ -29,16 +29,16 @@
                 ,"priceCurrency": "{{_yn_schema.currency|raw}}"
             {% endif %}
             {% if _yn_schema.lowPrice %}
-                ,"lowPrice": "{{_yn_schema.lowPrice|raw}}"
+                ,"lowPrice": {{_yn_schema.lowPrice|striptags|json_encode|raw}}
             {% endif %}
             {% if _yn_schema.highPrice %}
-                ,"highPrice": "{{_yn_schema.highPrice|raw}}"
+                ,"highPrice": {{_yn_schema.highPrice|striptags|json_encode|raw}}
             {% endif %}
             {% if _yn_schema.numberOfOffers %}
-                ,"offerCount": "{{_yn_schema.numberOfOffers|raw}}"
+                ,"offerCount": {{_yn_schema.numberOfOffers|striptags|json_encode|raw}}
             {% endif %}
             {% if _yn_schema.price %}
-                ,"price": "{{_yn_schema.price|raw}}"
+                ,"price": {{_yn_schema.price|striptags|json_encode|raw}}
             {% endif %}
             {% if _yn_schema.priceValidUntil %}
                 ,"priceValidUntil": "{{_yn_schema.priceValidUntil|date('Y-m-d')}}"
@@ -56,25 +56,25 @@
 				{% for _yn_review in _yn_schema.review %}
 					{
 						"@type": "Review",
-						"name": "{{_yn_review.name|raw}}",
+						"name": {{_yn_review.name|striptags|json_encode|raw}},
 						"reviewRating": {
 							"@type": "Rating",
-							"ratingValue": "{{_yn_review.rating|raw}}"
+							"ratingValue": {{_yn_review.rating|striptags|json_encode|raw}}
 						}
 						{% if _yn_review.author %}
 							,"author": {
 								"@type": "Person",
-								"name": "{{_yn_review.author|raw}}"
+								"name": {{_yn_review.author|striptags|json_encode|raw}}
 							}
 						{% endif %}
 						{% if _yn_review.publisher %}
 							,"publisher": {
 								"@type": "Person",
-								"name": "{{_yn_review.publisher|raw}}"
+								"name": {{_yn_review.publisher|striptags|json_encode|raw}}
 							}
 						{% endif %}
 						{% if _yn_review.text %}
-							,"reviewBody": "{{_yn_review.text|raw}}"
+							,"reviewBody": {{_yn_review.text|striptags|json_encode|raw}}
 						{% endif %}
 					}{% if not loop.last %},{% endif %}
 				{% endfor %}
@@ -84,23 +84,23 @@
 			,"aggregateRating": {
 				"@type": "AggregateRating"
 				{% if _yn_schema.aggregateRatingValue %}
-					,"ratingValue": "{{_yn_schema.aggregateRatingValue|raw}}"
+					,"ratingValue": {{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.numberOfRatings %}
-					,"reviewCount": "{{_yn_schema.numberOfRatings|raw}}"
+					,"reviewCount": {{_yn_schema.numberOfRatings|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.highestValueAllowed %}
-					,"bestRating": "{{_yn_schema.highestValueAllowed|raw}}"
+					,"bestRating": {{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.lowestValueAllowed %}
-					,"worstRating": "{{_yn_schema.lowestValueAllowed|raw}}"
+					,"worstRating": {{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 			}
 		{% endif %}
         {% if _yn_schema.awards %}
             ,"awards": [
                 {% for _yn_awards in _yn_schema.awards %}
-                    "{{_yn_awards.award|raw}}"{% if not loop.last %},{% endif %}
+                    {{_yn_awards.award|striptags|json_encode|raw}}{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
         {% endif %}

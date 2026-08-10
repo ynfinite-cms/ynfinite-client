@@ -9,10 +9,10 @@
     }
   {% endif %}
   {% if _yn_schema.headline %}
-    ,"headline": "{{_yn_schema.headline|raw}}"
+    ,"headline": {{_yn_schema.headline|striptags|json_encode|raw}}
   {% endif %}
   {% if _yn_schema.description %}
-    ,"description": "{{_yn_schema.description|raw}}"
+    ,"description": {{_yn_schema.description|striptags|json_encode|raw}}
   {% endif %}
   {% if _yn_schema.image %}
     ,"image": [
@@ -23,12 +23,12 @@
   {% endif %}
   {% if _yn_schema.author or _yn_schema.authorUrl %}
     ,"author": {
-        "@type": "Person",
+        "@type": "Person"
         {% if _yn_schema.author %}
-            "name": "{{_yn_schema.author|raw}}",
+            ,"name": {{_yn_schema.author|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.authorUrl %}
-            "url": "{{_yn_schema.authorUrl|raw}}"
+            ,"url": "{{_yn_schema.authorUrl|raw}}"
         {% endif %}
     }
   {% endif %}
@@ -36,7 +36,7 @@
     ,"publisher": {
         "@type": "Organization"
         {% if _yn_schema.publisher %}
-        ,"name": "{{_yn_schema.publisher|raw}}"
+        ,"name": {{_yn_schema.publisher|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.publisherLogo %}
         ,"logo": {

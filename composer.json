@@ -26,9 +26,9 @@
 		"php-di/php-di": "^7.0",
 		"slim/psr7": "^1.5.0",
 		"slim/slim": "^4.10.0",
-		"slim/twig-view": "3.4.1",
-		"twig/intl-extra": "3.22.0",
-		"twig/twig": "3.22.0",
+		"slim/twig-view": "^3.4.1",
+		"twig/intl-extra": "^3.26.0",
+		"twig/twig": "^3.27.0",
 		"vlucas/phpdotenv": "^5.4.1",
 		"whichbrowser/parser": "^2.0",
 		"plesk/composer-command-info": "~1.1.0"

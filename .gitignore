@@ -148,3 +148,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Compiled assets
+public/assets/css/*.css
+public/assets/js/*.js
+public/assets/js/*.js.map
