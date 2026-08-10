@@ -19,6 +19,9 @@ return function (App $app) {
     
     $app->post('/yn-api/content', \App\Action\ApiGetContentAction::class);
 
+    $app->get('/yn-api/cache', \App\Action\GetApiCacheAction::class);
+    $app->post('/yn-api/cache', \App\Action\SetApiCacheAction::class);
+
     $app->get('[/{params:.*}]', \App\Action\RenderPageAction::class);
     $app->post('[/{params:.*}]', \App\Action\RenderPageAction::class);
 };
