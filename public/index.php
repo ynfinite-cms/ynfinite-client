@@ -7,7 +7,7 @@ use App\Utils\Cache\StaticCache;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__. '/../');
 $dotenv->load();
 
-if($_ENV['STATIC_PAGES'] !== "false" && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if($_ENV['STATIC_PAGES'] !== "false" && $_SERVER['REQUEST_METHOD'] === 'GET' && strpos($_SERVER['REQUEST_URI'], '/yn-api/') !== 0) {
     $cachedPage = StaticCache::getCache("PAGE");
     if ($cachedPage) {
         echo $cachedPage;
