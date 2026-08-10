@@ -37,7 +37,13 @@ class RequestCacheRepository {
     public function invalidateAllCache() {
         $cachedPages = $this->connection->table("static_cache")->get();
 
-        return $this->deleteCache($cachedPages);
+        // Clear page/request caches from DB
+        $deleted = $this->deleteCache($cachedPages);
+
+        // Also clear all file-based API caches
+        $deleted += StaticCache::invalidateAllApiCache();
+
+        return $deleted;
     }
 
     public function invalidateCache($cacheKeys) {

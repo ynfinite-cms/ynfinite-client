@@ -3,6 +3,7 @@ import './js/general'
 
 import YnfiniteAccordions from './js/accordions'
 import YnfiniteBotProtection from './js/botprotection'
+import YnfiniteCache from './js/cache'
 import YnfiniteConsents from './js/cookies'
 import YnfiniteForms from './js/forms'
 import YnfiniteFormSettings from './js/formSettings'
@@ -20,6 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 window.$_yn = {
+	cache: YnfiniteCache,
 	forms: {
 		updateUrl: YnfiniteForms.updateUrl,
 		repopulate: YnfiniteForms.repopulateForm,
