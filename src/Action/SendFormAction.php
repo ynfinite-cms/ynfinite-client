@@ -55,7 +55,7 @@ final class SendFormAction
 
                 break;
             case "error": 
-                $result = array("type" => 'error', 'message' => $formResponse["message"]);
+                $result = array("type" => 'error', 'message' => $formResponse["message"] ?? null);
                 break;
         }
 

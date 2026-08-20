@@ -132,20 +132,28 @@ final class TwigRenderer
                 return '';
             }
 
+            // Field types that never submit an enforceable scalar under
+            // fields[alias]: hidden inputs are barred from HTML5 validation and
+            // may legitimately be empty, list/complex fields submit their
+            // *nested* aliases instead, and the display-only types submit
+            // nothing at all. Enforcing them server-side rejected valid
+            // submissions with "Please fill in all required fields." and left
+            // the visitor no way to fix it.
+            $notEnforceable = ['hidden', 'list', 'complexFormField', 'spacer', 'description', 'highlight'];
+
             $requiredAliases = [];
             foreach ($form['groups'] as $group) {
-                foreach ($group['fields'] ?? [] as $row) {
-                    foreach ($row as $field) {
-                        if (!empty($field['required']) && !empty($field['alias'])) {
-                            $requiredAliases[] = $field['alias'];
-                        }
+                foreach ($group['elements'] ?? [] as $field) {
+                    if (in_array($field['type'] ?? '', $notEnforceable, true)) {
+                        continue;
+                    }
+                    if (!empty($field['required']) && !empty($field['alias'])) {
+                        $requiredAliases[] = $field['alias'];
                     }
                 }
             }
 
-            if (empty($requiredAliases)) {
-                return '';
-            }
+            $requiredAliases = array_values(array_unique($requiredAliases));
 
             $payload = json_encode([
                 'formId' => $form['_id'] ?? '',
@@ -165,6 +173,36 @@ final class TwigRenderer
 
         $this->twig->addFunction($_yn_required_fields_token);
 
+        // Server-signs the form method so PHP can reject submissions where the
+        // method field in the POST body was tampered (e.g. changed from 'post'
+        // to 'get' via DevTools to bypass the security layer gate).
+        // No timestamp — method never changes per form, and the token is shared
+        // across all users of a static-cached page.
+        $_yn_form_method_token = new \Twig\TwigFunction('_yn_form_method_token', function ($form) {
+            $payload = json_encode([
+                'formId' => $form['_id'] ?? '',
+                'method' => $form['method'] ?? 'post',
+            ]);
+            $secret = $this->settings['ynfinite']['auth']['api_key'] ?? '';
+            $sig    = hash_hmac('sha256', $payload, $secret);
+            return htmlspecialchars(
+                base64_encode(json_encode(['p' => $payload, 's' => $sig])),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+        }, ['is_safe' => ['html']]);
+        $this->twig->addFunction($_yn_form_method_token);
+
+        // Server-signs the noBotProtection sentinel so bots cannot fake the nobot submission path.
+        // Not CSRF-bound here — proofenHash already covers that; this token only proves the form
+        // was rendered by this server for this specific formId.
+        $_yn_nobot_token = new \Twig\TwigFunction('_yn_nobot_token', function ($formId) {
+            $secret = $this->settings['ynfinite']['auth']['api_key'] ?? '';
+            return hash_hmac('sha256', (string) $formId . ':nobot:', $secret);
+        }, ['is_safe' => ['html']]);
+        $this->twig->addFunction($_yn_nobot_token);
+
+        // Restored the missing declaration for $filterTrans
         $filterTrans = new \Twig\TwigFilter('trans', function ($string) {
             $i18n = new I18nUtils($this->twig, $this->data);
             return $i18n->translate($string);

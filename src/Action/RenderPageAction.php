@@ -55,7 +55,7 @@ final class RenderPageAction
             if($formRequest && $formRequest["method"] == "post" && !isset($formRequest["hasProof"])){
                 $this->securityError = array(
                     "success" => false,
-                    "rendered" => "The form has no proof that is was sent by a human. Sorry for you inconvenience."
+                    "rendered" => "The form has no proof that it was sent by a human. Sorry for the inconvenience."
                 );
             }
             

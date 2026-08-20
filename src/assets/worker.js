@@ -2,8 +2,8 @@ import SHA256 from 'crypto-js/sha256'
 
 let nonce = 0
 
-function calculateHash(previousHash, timestamp, nonce, form) {
-	return SHA256(previousHash + timestamp + form + nonce).toString()
+function calculateHash(csrfToken, previousHash, timestamp, nonce, form) {
+	return SHA256(csrfToken + previousHash + timestamp + form + nonce).toString()
 }
 
 onmessage = (e) => {
@@ -13,6 +13,7 @@ onmessage = (e) => {
 	const timestamp = e.data.timestamp
 	const previousHash = e.data.previousHash
 	const minRunTime = e.data.minRunTime
+	const csrfToken = e.data.csrfToken
 
 	let chancesArray = []
 	let hash = ''
@@ -26,7 +27,7 @@ onmessage = (e) => {
 	while (hashFound === false || runTimeOver === false) {
 		if (hashFound === false) {
 			nonce++
-			hash = calculateHash(previousHash, timestamp, nonce, form)
+			hash = calculateHash(csrfToken, previousHash, timestamp, nonce, form)
 
 			if (chancesArray.includes(hash.substring(0, difficulty))) {
 				hashFound = true
@@ -36,5 +37,5 @@ onmessage = (e) => {
 		}
 	}
 
-	postMessage(hash)
+	postMessage({ hash, nonce })
 }

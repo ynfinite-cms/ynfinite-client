@@ -38,21 +38,22 @@
 	data-ynformid="{{form._id}}" 
 	data-ynformmethod="{{form.method}}" 
 	data-events="{{form.events|map((x) => x._id)|json_encode}}"
-	{% if section._id %} data-ynsectionid="{{section._id}}" {% endif %} 
-	{% if form.settings.noBotProtection %}data-has-proof="true" data-proofen-hash="true"{% endif %}
+	{% if section._id %} data-ynsectionid="{{section._id}}" {% endif %}
 	{{data}} 
 >
 	<fieldset>
 	    <legend style="display: none;">{{ 'yn_contactForm'|trans }}</legend>
+		<input type="hidden" name="yn_form_method_token" value="{{ _yn_form_method_token(form) }}">
 		{% if form.method != "get" %}
+			{% set requiredToken = _yn_required_fields_token(form) %}
 			<label style="display: none !important;" tabindex="-1" aria-hidden="true" for="yn_confirm_email">{{ 'yn_confirmEmail'|trans }}</label>
-			<input type="text" name="yn_confirm_email" id="yn_confirm_email" required value style="display: none !important;" autocomplete="off" tabindex="-1" aria-hidden="true"> 
-			<input type="text" name="yn_confirm_name" style="position:absolute; left:-9999px;" required value placeholder="{{ 'yn_name'|trans }}" autocomplete="off" tabindex="-1" aria-hidden="true"> 
+			<input type="text" name="yn_confirm_email" id="yn_confirm_email" value style="display: none !important;" autocomplete="off" tabindex="-1" aria-hidden="true"> 
+			<input type="text" name="yn_confirm_name" style="position:absolute; left:-9999px;" value placeholder="{{ 'yn_name'|trans }}" autocomplete="off" tabindex="-1" aria-hidden="true"> 
 			<input type="hidden" value="{{form._id}}" name="formId">
 			<input type="hidden" value="{{_ynfinite.languages.current}}" name="formLanguage">
-			{% set requiredToken = _yn_required_fields_token(form) %}
-			{% if requiredToken %}
-				<input type="hidden" name="yn_required_fields_token" value="{{ requiredToken }}">
+			<input type="hidden" name="yn_required_fields_token" value="{{ requiredToken }}">
+			{% if form.settings.noBotProtection %}
+				<input type="hidden" name="yn_nobot_token" value="{{ _yn_nobot_token(form._id) }}">
 			{% endif %}
 		{% endif %}
 		{% if section._id %}
