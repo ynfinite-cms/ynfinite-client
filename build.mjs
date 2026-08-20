@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process'
+import { spawn, execSync } from 'child_process'
+import { writeFileSync } from 'fs'
 import { resolve } from 'path'
 
 async function runCommand(command, args = [], options = {}) {
@@ -34,6 +35,19 @@ async function buildAssets() {
 		// Build JavaScript files
 		console.log('📦 Building JavaScript files...')
 		await runCommand('npm', ['run', 'build:js'])
+
+		// Deploy marker: StaticCache::buildStamp() compares every cache file's
+		// mtime against this file's mtime. The FTP deploy uploads it with a fresh
+		// mtime, which turns every page cached before the deploy into a cache
+		// miss (lazy re-render) - no manual cache reset needed after deploys.
+		let gitSha = ''
+		try {
+			gitSha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+		} catch {
+			// not a git checkout (e.g. exported build) - timestamp alone is fine
+		}
+		writeFileSync('public/assets/vendor/ynfinite/js/build-version.txt', `${new Date().toISOString()}${gitSha ? ' ' + gitSha : ''}\n`)
+		console.log('🏷️  Wrote build marker (build-version.txt)')
 
 		console.log('✅ All assets built successfully!')
 	} catch (error) {

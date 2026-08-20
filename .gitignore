@@ -10,10 +10,17 @@
 
 /tmp/locales/*
 !/tmp/locales/.gitkeep
+
+/tmp/bot_protection_logs/*
+!/tmp/bot_protection_logs/.gitkeep
 !/templates/.gitkeep
 
-/tests/
+/tests/*
+!/tests/botprotection/
 /phpunit.xml
+
+# Deploy marker written by build.mjs - mtime marks the last deploy
+public/assets/vendor/ynfinite/js/build-version.txt
 /docs
 
 ### addons

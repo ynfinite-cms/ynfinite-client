@@ -132,9 +132,21 @@ final class TwigRenderer
                 return '';
             }
 
+            // Field types that never submit an enforceable scalar under
+            // fields[alias]: hidden inputs are barred from HTML5 validation and
+            // may legitimately be empty, list/complex fields submit their
+            // *nested* aliases instead, and the display-only types submit
+            // nothing at all. Enforcing them server-side rejected valid
+            // submissions with "Please fill in all required fields." and left
+            // the visitor no way to fix it.
+            $notEnforceable = ['hidden', 'list', 'complexFormField', 'spacer', 'description', 'highlight'];
+
             $requiredAliases = [];
             foreach ($form['groups'] as $group) {
                 foreach ($group['elements'] ?? [] as $field) {
+                    if (in_array($field['type'] ?? '', $notEnforceable, true)) {
+                        continue;
+                    }
                     if (!empty($field['required']) && !empty($field['alias'])) {
                         $requiredAliases[] = $field['alias'];
                     }

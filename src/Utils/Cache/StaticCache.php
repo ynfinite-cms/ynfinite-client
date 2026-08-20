@@ -7,6 +7,36 @@ class StaticCache
     const BASIC_PATH = "/../tmp/static_pages/";
     const DEFAULT_API_CACHE_TTL = 86400; // 24 hours
 
+    /** @var int|null Memoized deploy timestamp - see buildStamp(). */
+    private static $buildStamp = null;
+
+    /**
+     * Timestamp of the last deploy.
+     *
+     * Two signals, newest wins: build-version.txt (written by build.mjs when the
+     * pipeline builds) and the app bundle itself (rebuilt by Prepros and
+     * re-uploaded on every deploy that changes it). Taking the max keeps the
+     * mechanism working no matter which deploy path shipped the release, and a
+     * stale leftover marker can never mask a newer bundle. Any cache file older
+     * than this stamp was rendered by the previous release (stale hidden inputs,
+     * old asset URLs) and must be treated as a miss. 0 disables the check.
+     *
+     * getcwd() is public/ on both read paths (index.php fast path and Slim) -
+     * the same assumption BASIC_PATH already makes.
+     */
+    public static function buildStamp()
+    {
+        if (self::$buildStamp !== null) {
+            return self::$buildStamp;
+        }
+
+        $marker = @filemtime(getcwd() . '/assets/vendor/ynfinite/js/build-version.txt');
+        $bundle = @filemtime(getcwd() . '/assets/vendor/ynfinite/js/app.min.js');
+
+        self::$buildStamp = max((int) $marker, (int) $bundle);
+        return self::$buildStamp;
+    }
+
     public static function createCacheKey($type, $pageOnly = false) {
         $filename = null;
         switch($type) {
@@ -221,11 +251,28 @@ class StaticCache
 
         if(file_exists($path)) {
             $etag = filemtime($path);
+
+            // Cached before the last deploy? Treat as a miss: the re-render
+            // overwrites this file via createCache() (same path, same DB row),
+            // so no unlink and no orphaned static_cache rows. Costs one extra
+            // stat per request on the index.php fast path.
+            if ($etag < self::buildStamp()) {
+                return false;
+            }
+
             header('Cache-Control: max-age=15');
             header('ETag: ' . $etag);
             
             if(isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
                 if($_SERVER['HTTP_IF_NONE_MATCH'] == $etag) {
+                    // This exit() happens *inside* getCache(), i.e. before
+                    // index.php gets a chance to call ensureCookie(). A browser
+                    // revalidating a cached page with expired cookies would
+                    // therefore never receive a new CSRF/dwell cookie and its
+                    // next form POST failed with "Invalid or missing CSRF
+                    // token" - a loop that reloading could not break, because
+                    // every reload was another 304. Refresh the cookies here.
+                    \App\Middleware\CsrfCookieMiddleware::ensureCookie();
                     header('HTTP/1.1 304 Not Modified', true, 304);
                     exit();
                 }

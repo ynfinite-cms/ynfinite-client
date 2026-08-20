@@ -27,6 +27,25 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
     private const COOKIE_LENGTH = 32; // bytes → 64 hex chars
     private const COOKIE_TTL    = 86400; // 24 hours
 
+    /**
+     * Signed issue-timestamp cookie ("dwell" cookie): `<unix-ts>.<hmac-prefix>`.
+     *
+     * PHP requires a minimum time between a visitor's first request and a form
+     * POST (see SendFormService::validateDwellTime). The timestamp lives in a
+     * *separate* HttpOnly cookie instead of inside the CSRF cookie because the
+     * CSRF value feeds the honeypot, the PoW digest, JS getCsrfToken() and the
+     * index.php fast-path format check - changing its format would break all of
+     * them. HttpOnly is fine here: JS never needs to read it.
+     *
+     * Cache-safe: like the CSRF cookie it is minted per visitor on their own
+     * request (ensureCookie() covers static-cache hits), never embedded in HTML.
+     * The value is only minted when absent or invalid - re-setting refreshes the
+     * expiry but never the timestamp, so the dwell clock cannot be reset by
+     * reloading.
+     */
+    public const  TS_COOKIE_NAME = 'ynfinite-form-ts';
+    private const TS_SIG_LENGTH  = 32; // hex chars of the HMAC kept in the value
+
     public function process(
         ServerRequestInterface  $request,
         RequestHandlerInterface $handler
@@ -37,6 +56,13 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
         if (!self::isValidToken($existing)) {
             $existing = bin2hex(random_bytes(self::COOKIE_LENGTH));
         }
+
+        // Dwell cookie: keep a valid existing value (its timestamp must survive
+        // refreshes), mint a fresh one otherwise.
+        $existingTs = $request->getCookieParams()[self::TS_COOKIE_NAME] ?? '';
+        $tsValue    = self::validateTsCookie($existingTs) !== null
+            ? $existingTs
+            : self::mintTsCookieValue(time());
 
         // Make the token available on the request for any downstream middleware
         $request = $request->withAttribute(self::COOKIE_NAME, $existing);
@@ -55,6 +81,10 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
         $response = $response->withAddedHeader(
             'Set-Cookie',
             self::COOKIE_NAME . '=' . $existing . '; Expires=' . gmdate('D, d M Y H:i:s T', $expire) . $flags
+        );
+        $response = $response->withAddedHeader(
+            'Set-Cookie',
+            self::TS_COOKIE_NAME . '=' . $tsValue . '; Expires=' . gmdate('D, d M Y H:i:s T', $expire) . $flags . '; HttpOnly'
         );
 
         return $response;
@@ -82,6 +112,55 @@ final class CsrfCookieMiddleware implements MiddlewareInterface
         // Populate $_COOKIE immediately so any code further down in the same
         // request (e.g. logging) can read the token without a round-trip.
         $_COOKIE[self::COOKIE_NAME] = $token;
+
+        // Dwell cookie - same rules as in process(): keep a valid value, only
+        // mint when absent/invalid, refresh the expiry either way.
+        $existingTs = $_COOKIE[self::TS_COOKIE_NAME] ?? '';
+        $tsValue    = self::validateTsCookie($existingTs) !== null
+            ? $existingTs
+            : self::mintTsCookieValue(time());
+
+        setcookie(self::TS_COOKIE_NAME, $tsValue, [
+            'expires'  => time() + self::COOKIE_TTL,
+            'path'     => '/',
+            'samesite' => 'Lax',
+            'secure'   => $secure,
+            'httponly' => true,
+        ]);
+        $_COOKIE[self::TS_COOKIE_NAME] = $tsValue;
+    }
+
+    /**
+     * Builds a signed dwell-cookie value for the given issue timestamp.
+     */
+    public static function mintTsCookieValue(int $ts): string
+    {
+        return $ts . '.' . substr(hash_hmac('sha256', (string) $ts, self::tsSecret()), 0, self::TS_SIG_LENGTH);
+    }
+
+    /**
+     * Returns the issue timestamp of a valid dwell-cookie value, or null when
+     * the value is malformed or the signature does not verify.
+     */
+    public static function validateTsCookie(string $value): ?int
+    {
+        if (!preg_match('/^(\d{9,12})\.([0-9a-f]{' . self::TS_SIG_LENGTH . '})$/', $value, $m)) {
+            return null;
+        }
+
+        $expected = substr(hash_hmac('sha256', $m[1], self::tsSecret()), 0, self::TS_SIG_LENGTH);
+
+        return hash_equals($expected, $m[2]) ? (int) $m[1] : null;
+    }
+
+    /**
+     * HMAC key for the dwell cookie. Read from the environment (not the
+     * container) because ensureCookie() runs before Slim boots on static-cache
+     * hits; config/ynfinite.php sources auth.api_key from the same variable.
+     */
+    private static function tsSecret(): string
+    {
+        return (string) ($_ENV['YN_API_KEY'] ?? $_SERVER['YN_API_KEY'] ?? '');
     }
 
     private static function isValidToken(string $token): bool
