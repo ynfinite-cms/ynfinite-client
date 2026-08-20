@@ -3,16 +3,16 @@
         "@context": "https://schema.org/",
         "@type": "JobPosting"
         {% if _yn_schema.title %}
-            ,"title": "{{_yn_schema.title|raw}}"
+            ,"title": {{_yn_schema.title|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.description %}
-            ,"description": "{{_yn_schema.description|raw}}"
+            ,"description": {{_yn_schema.description|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.company or _yn_schema.companyUrl or _yn_schema.companyLogo %}
             ,"hiringOrganization" : {
                 "@type": "Organization"
                 {% if _yn_schema.company %}
-                    ,"name": "{{_yn_schema.company|raw}}"
+                    ,"name": {{_yn_schema.company|striptags|json_encode|raw}}
                 {% endif %}
                 {% if _yn_schema.companyUrl %}
                     ,"sameAs": "{{_yn_schema.companyUrl|raw}}"
@@ -26,10 +26,10 @@
             ,"industry": "{{_yn_schema.industry|raw}}"
         {% endif %}
         {% if _yn_schema.employmentType %}
-            ,"employmentType": "{{_yn_schema.employmentType|raw}}"
+            ,"employmentType": {{_yn_schema.employmentType|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.workHours %}
-            ,"workHours": "{{_yn_schema.workHours|raw}}"
+            ,"workHours": {{_yn_schema.workHours|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.datePosted %}
             ,"datePosted": "{{_yn_schema.datePosted|date('Y-m-d')}}"
@@ -42,7 +42,7 @@
             {% if _yn_schema.country %}
                 ,"applicantLocationRequirements": {
                     "@type": "Country",
-                    "name": "{{_yn_schema.country|raw}}",
+                    "name": {{_yn_schema.country|striptags|json_encode|raw}}
                 }
             {% endif %}
         {% elseif _yn_schema.street or _yn_schema.city or _yn_schema.zip or _yn_schema.country %}
@@ -51,16 +51,16 @@
                 "address": {
                     "@type": "PostalAddress"
                     {% if _yn_schema.street %}
-                        ,"streetAddress": "{{_yn_schema.street|raw}}"
+                        ,"streetAddress": {{_yn_schema.street|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_schema.city %}
-                        ,"addressLocality": "{{_yn_schema.city|raw}}"
+                        ,"addressLocality": {{_yn_schema.city|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_schema.zip %}
-                        ,"postalCode": "{{_yn_schema.zip|raw}}"
+                        ,"postalCode": {{_yn_schema.zip|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_schema.country %}
-                        ,"addressCountry": "{{_yn_schema.country|raw}}"
+                        ,"addressCountry": {{_yn_schema.country|striptags|json_encode|raw}}
                     {% endif %}
                 }
             }
@@ -75,34 +75,34 @@
                 "@type": "QuantitativeValue"
                 {% if _yn_schema.salaryMin %}
                     {% if _yn_schema.salaryMax %}
-                        ,"minValue": "{{_yn_schema.salaryMin|raw}}"
+                        ,"minValue": {{_yn_schema.salaryMin|striptags|json_encode|raw}}
                     {% else %}
-                        ,"value": "{{_yn_schema.salaryMin|raw}}"
+                        ,"value": {{_yn_schema.salaryMin|striptags|json_encode|raw}}
                     {% endif %}
                 {% endif %}
                 {% if _yn_schema.salaryMax %}
-                    ,"maxValue": "{{_yn_schema.salaryMax|raw}}"
+                    ,"maxValue": {{_yn_schema.salaryMax|striptags|json_encode|raw}}
                 {% endif %}
                 {% if _yn_schema.salaryPer %}
-                    ,"unitText": "{{_yn_schema.salaryPer|raw}}"
+                    ,"unitText": {{_yn_schema.salaryPer|striptags|json_encode|raw}}
                 {% endif %}
                 }
             }
         {% endif %}
         {% if _yn_schema.responsibilities %}
-            ,"responsibilities": "{{_yn_schema.responsibilities|raw}}"
+            ,"responsibilities": {{_yn_schema.responsibilities|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.skills %}
-            ,"skills": "{{_yn_schema.skills|raw}}"
+            ,"skills": {{_yn_schema.skills|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.qualifications %}
-            ,"qualifications": "{{_yn_schema.qualifications|raw}}"
+            ,"qualifications": {{_yn_schema.qualifications|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.educationRequirements %}
-            ,"educationRequirements": "{{_yn_schema.educationRequirements|raw}}"
+            ,"educationRequirements": {{_yn_schema.educationRequirements|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.experienceRequirements %}
-            ,"experienceRequirements": "{{_yn_schema.experienceRequirements|raw}}"
+            ,"experienceRequirements": {{_yn_schema.experienceRequirements|striptags|json_encode|raw}}
         {% endif %}
     }
 </script>

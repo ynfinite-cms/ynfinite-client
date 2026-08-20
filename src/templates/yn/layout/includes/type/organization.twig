@@ -3,16 +3,16 @@
 		"@context": "https://schema.org",
 		"@type": "{{_yn_schema.variant|raw}}"
 		{% if _yn_schema.name %}
-			,"name": "{{_yn_schema.name|raw}}"
+			,"name": {{_yn_schema.name|striptags|json_encode|raw}}
 		{% endif %}
 		{% if _yn_schema.alternateName %}
-			,"alternateName": "{{_yn_schema.alternateName|raw}}"
+			,"alternateName": {{_yn_schema.alternateName|striptags|json_encode|raw}}
 		{% endif %}
 		{% if _yn_schema.url %}
 			,"url": "{{_yn_schema.url|raw}}"
 		{% endif %}
 		{% if _yn_schema.keywords %}
-			,"keywords": "{{_yn_schema.keywords|raw}}"
+			,"keywords": {{_yn_schema.keywords|striptags|json_encode|raw}}
 		{% endif %}
 		{% if _yn_schema.logo %}
 			,"logo": "{{_yn_schema.logo[0].path|raw}}"
@@ -22,7 +22,7 @@
 				{% for _yn_contact in _yn_schema.contact %}
 					{
 						"@type": "ContactPoint",
-						"telephone": "{{_yn_contact.phone|raw}}",
+						"telephone": {{_yn_contact.phone|striptags|json_encode|raw}},
 						"contactType": "{{_yn_contact.variant|raw}}"
 						{% if _yn_contact.areas %}
 							,"areaServed": [{% for _yn_lang in _yn_contact.areas %}"{{_yn_lang|raw}}"{% if not loop.last %},{% endif %}{% endfor %}]
@@ -40,14 +40,14 @@
 		{% if _yn_schema.knowsAbout %}
             ,"knowsAbout": [
                 {% for _yn_knowsAbout in _yn_schema.knowsAbout %}
-                    "{{_yn_knowsAbout.text|raw}}"{% if not loop.last %},{% endif %}
+                    {{_yn_knowsAbout.text|striptags|json_encode|raw}}{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
         {% endif %}
 		{% if _yn_schema.awards %}
             ,"awards": [
                 {% for _yn_awards in _yn_schema.awards %}
-					"{{_yn_awards.award|raw}}"{% if not loop.last %},{% endif %}
+					{{_yn_awards.award|striptags|json_encode|raw}}{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]
         {% endif %}

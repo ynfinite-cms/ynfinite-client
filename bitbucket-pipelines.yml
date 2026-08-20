@@ -1,26 +1,38 @@
+image: node:20
+
 pipelines:
-  branches:
-    master:
-      - step:
-          deployment: Production
-          script:
-             - pipe: 'atlassian/ftp-deploy:0.3.7'
-               variables:
-                  USER: $FTP_USER
-                  PASSWORD: $FTP_PASS
-                  SERVER: $SERVER
-                  REMOTE_PATH: $REMOTE_PATH
-                  EXTRA_ARGS: '--exclude=.env --exclude=^development/ --exclude=^vendor/'
-                  DELETE_FLAG: 'false'
-    development:
-      - step:
-          deployment: Development
-          script:
-             - pipe: 'atlassian/ftp-deploy:0.3.7'
-               variables:
-                  USER: $FTP_USER
-                  PASSWORD: $FTP_PASS
-                  SERVER: $SERVER
-                  REMOTE_PATH: $REMOTE_PATH
-                  EXTRA_ARGS: '--exclude=.env --exclude=^development/ --exclude=^vendor/'
-                  DELETE_FLAG: 'false'
+    branches:
+        main:
+            - step:
+                  name: Build & Deploy to Production
+                  deployment: Production
+                  caches:
+                      - node
+                  script:
+                      - npm ci
+                      - node build.mjs
+                      - pipe: 'atlassian/ftp-deploy:0.3.7'
+                        variables:
+                            USER: $FTP_USER
+                            PASSWORD: $FTP_PASS
+                            SERVER: $SERVER
+                            REMOTE_PATH: $REMOTE_PATH
+                            EXTRA_ARGS: '--exclude=.env --exclude=^development/ --exclude=^vendor/ --exclude=node_modules/'
+                            DELETE_FLAG: 'false'
+        development:
+            - step:
+                  name: Build & Deploy to Development
+                  deployment: Development
+                  caches:
+                      - node
+                  script:
+                      - npm ci
+                      - node build.mjs
+                      - pipe: 'atlassian/ftp-deploy:0.3.7'
+                        variables:
+                            USER: $FTP_USER
+                            PASSWORD: $FTP_PASS
+                            SERVER: $SERVER
+                            REMOTE_PATH: $REMOTE_PATH
+                            EXTRA_ARGS: '--exclude=.env --exclude=^development/ --exclude=^vendor/ --exclude=node_modules/'
+                            DELETE_FLAG: 'false'

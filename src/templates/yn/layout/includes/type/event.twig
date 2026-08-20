@@ -6,7 +6,7 @@
             ,"name": "{{_yn_schema.name|raw}}"
         {% endif %}
         {% if _yn_schema.description %}
-            ,"description": "{{_yn_schema.description|raw}}"
+            ,"description": {{_yn_schema.description|striptags|json_encode|raw}}
         {% endif %}
         {% if _yn_schema.image %}
             ,"image": "{{_yn_schema.image[0].path|raw}}"
@@ -36,21 +36,21 @@
                 {		
                     "@type": "Place"
                     {% if _yn_schema.venueName %}
-                        ,"name": "{{_yn_schema.venueName|raw}}"
+                        ,"name": {{_yn_schema.venueName|striptags|json_encode|raw}}
                     {% endif %}
                     ,"address": {
                     "@type": "PostalAddress"
                     {% if _yn_schema.venueStreet %}
-                        ,"streetAddress": "{{_yn_schema.venueStreet|raw}}"
+                        ,"streetAddress": {{_yn_schema.venueStreet|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_schema.venueCity %}
-                        ,"addressLocality": "{{_yn_schema.venueCity|raw}}"
+                        ,"addressLocality": {{_yn_schema.venueCity|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_schema.venueZip %}
-                        ,"postalCode": "{{_yn_schema.venueZip|raw}}"
+                        ,"postalCode": {{_yn_schema.venueZip|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_schema.venueCountry %}
-                        ,"addressCountry": "{{_yn_schema.venueCountry|raw}}"
+                        ,"addressCountry": {{_yn_schema.venueCountry|striptags|json_encode|raw}}
                     {% endif %}
                     }
                 }
@@ -63,7 +63,7 @@
                     "@type": "{{_yn_schema.performerType|raw}}",
                 {% endif %}
                 {% if _yn_schema.performerName %}
-                    "name": "{{_yn_schema.performerName|raw}}"
+                    "name": {{_yn_schema.performerName|striptags|json_encode|raw}}
                 {% endif %}
             }
         {% endif %}
@@ -73,10 +73,10 @@
                 {
                     "@type": "Offer"
                     {% if _yn_offer.name %}
-                        ,"name": "{{_yn_offer.name|raw}}"
+                        ,"name": {{_yn_offer.name|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_offer.price %}
-                        ,"price": "{{_yn_offer.price|raw}}"
+                        ,"price": {{_yn_offer.price|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_offer.currency %}
                         ,"priceCurrency": "{{_yn_offer.currency|raw}}"

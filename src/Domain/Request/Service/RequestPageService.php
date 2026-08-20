@@ -31,7 +31,10 @@ final class RequestPageService extends RequestService
             $body = $request["body"];
         } else {
             $statusCode = 503;
-            $body = array("message" => "Unsere Webseite ist derzeit wegen Wartungsarbeiten nicht erreichbar. <br> Bitte versuche es später noch einmal - wir sind bald wieder für dich da!");
+            $body = array(
+                "type" => "offline",
+                "message" => "Unsere Webseite ist derzeit wegen Wartungsarbeiten nicht erreichbar. <br> Bitte versuche es später noch einmal - wir sind bald wieder für dich da!"
+            );
         }
         if(in_array($statusCode, [200, 201, 206], true)){
             // Page render
@@ -44,6 +47,13 @@ final class RequestPageService extends RequestService
                 "type" => 'redirect', 
                 "statusCode" => $statusCode, 
                 "url" => $body['url']
+            );
+        } else if ($statusCode === 503 && isset($body['type']) && $body['type'] === 'offline') {
+            // Maintenance mode
+            return array(
+                "type" => 'maintenance',
+                "message" => $body['message'] ?? 'Service temporarily unavailable',
+                "statusCode" => $statusCode
             );
         } else if ($statusCode === 404){
             // 404 render
