@@ -295,19 +295,19 @@ final class TwigRenderer
 
     private function getBrowserClasses()
     {
-        $useragent = new \WhichBrowser\Parser($_SERVER['HTTP_USER_AGENT']);
+        $useragent = new \WhichBrowser\Parser($_SERVER['HTTP_USER_AGENT'] ?? '');
         $uaArray = array();
         try {
 
             // $useragent = $provider->parse($_SERVER['HTTP_USER_AGENT']);
 
             $browserVersion = "";
-            if($useragent->browser->version) {
+            if(isset($useragent->browser->version)) {
                 $browserVersion = $useragent->browser->version->toString();
             }
 
             $osVersion = "";
-            if($useragent->os->version) {
+            if(isset($useragent->os->version)) {
                 $osVersion = $useragent->os->version->toString();
             }
 
@@ -320,7 +320,7 @@ final class TwigRenderer
                 $useragent->device->type,
             );
 
-            if ($useragent->device->model) {
+            if (isset($useragent->device->model)) {
                 $uaArray[] = $useragent->device->model;
 
             }
