@@ -76,15 +76,10 @@
                 </g>
             </svg>
             <div>
-                <span class="code">{{ statusCode|raw }}</span>
+                <span class="code">{{ statusCode }}</span>
                 <h2 class="message">
-                    {{ message|raw }}
+                    {{ message }}
                 </h2>
-                {% if error %}
-                    <p class="error-description">
-                        {{ error|json_encode|raw }}
-                    </p>
-                {% endif %}
             </div>
         </div>
     </div>

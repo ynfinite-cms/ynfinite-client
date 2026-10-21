@@ -63,7 +63,7 @@ final class RenderPageAction
 
             if (isset($data['type']) && in_array($data['type'], ['maintenance', 'offline'], true)) {
                 $maintenanceStatus = isset($data['statusCode']) ? (int) $data['statusCode'] : 503;
-                $maintenanceMessage = $data['message'] ?? 'Service temporarily unavailable';
+                $maintenanceMessage = $this->toSafeSystemMessage($data['message'] ?? null, 'Service temporarily unavailable');
                 $lang = $this->resolveRequestLanguage();
                 $rendered = $this->renderSystemTemplate('maintenance.twig', [
                     'message'  => $maintenanceMessage,
@@ -72,29 +72,19 @@ final class RenderPageAction
                     'badge'    => $this->getMaintenanceTranslation('yn_maintenanceBadge', $lang, 'Maintenance in progress'),
                 ]);
 
-                if ($rendered !== null) {
-                    $response->getBody()->write($rendered);
-                } else {
-                    $response->getBody()->write($maintenanceMessage);
-                }
-
+                $response->getBody()->write($rendered ?? (string) $maintenanceMessage);
                 return $response->withStatus($maintenanceStatus);
             }
             
             if ((isset($data['type']) && $data['type'] === 'error') || !isset($data['type'])) {
                 $errorStatus = isset($data['statusCode']) ? (int) $data['statusCode'] : 500;
-                $errorMessage = $data['message'] ?? 'An unexpected error occurred.';
+                $errorMessage = $this->toSafeSystemMessage($data['message'] ?? null, 'An unexpected error occurred.');
                 $rendered = $this->renderSystemTemplate('error.twig', [
                     'message' => $errorMessage,
                     'statusCode' => $errorStatus,
                 ]);
 
-                if ($rendered !== null) {
-                    $response->getBody()->write($rendered);
-                    return $response->withStatus($errorStatus);
-                }
-
-                $response->getBody()->write('An error occurred: ' . $errorMessage);
+                $response->getBody()->write($rendered ?? 'An error occurred: ' . $errorMessage);
                 return $response->withStatus($errorStatus);
             }
 
@@ -177,6 +167,18 @@ final class RenderPageAction
         }
 
         return $fallback;
+    }
+
+    /**
+     * Backend messages may echo request input (e.g. an invalid formId), so they are HTML-escaped
+     * with only line breaks kept. Returning Markup keeps project-specific system templates that
+     * still use |raw safe, while autoescaping templates do not double-escape it.
+     */
+    private function toSafeSystemMessage($message, string $fallback): \Twig\Markup
+    {
+        $escaped = htmlspecialchars(is_scalar($message) ? (string) $message : $fallback, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        return new \Twig\Markup(preg_replace('#&lt;br\s*/?&gt;#i', '<br>', $escaped), 'UTF-8');
     }
 
     private function renderSystemTemplate(string $templateName, array $context): ?string
