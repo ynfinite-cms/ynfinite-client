@@ -7,8 +7,10 @@ use SlimSession\Helper as SessionHelper;
 use Psr\Container\ContainerInterface;
 
 use App\Domain\Request\Utils\CurlHandler;
+use App\Plugin\RunsPlugins;
 
 class RequestService {
+    use RunsPlugins;
 
     private $repository;
     public $settings;

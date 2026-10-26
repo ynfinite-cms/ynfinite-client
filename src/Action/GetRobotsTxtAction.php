@@ -6,11 +6,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use App\Domain\Request\Service\GetRobotsTxtService;
+use App\Plugin\RunsPlugins;
 
 use SlimSession\Helper as SessionHelper;
 
 final class GetRobotsTxtAction
 {
+    use RunsPlugins;
     public $getRobotsTxtService;
 
     public function __construct(GetRobotsTxtService $getRobotsTxtService) {
@@ -22,7 +24,14 @@ final class GetRobotsTxtAction
         ResponseInterface $response
     ): ResponseInterface {
         
-        $robots = $this->getRobotsTxtService->getRobotsTxt($request);
+        $context = ['request' => $request, 'operation' => 'robots.generate'];
+        $pluginResult = $this->runPluginHook('robots.before_generate', $context);
+        $robots = $pluginResult !== null ? $pluginResult : $this->getRobotsTxtService->getRobotsTxt($request);
+        $context['result'] = $robots;
+        $pluginResult = $this->runPluginHook('robots.after_generate', $context);
+        if ($pluginResult !== null) {
+            $robots = $pluginResult;
+        }
 
         // Build the HTTP response
         $response->getBody()->write($robots);

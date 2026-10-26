@@ -6,11 +6,14 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use App\Domain\Request\Repository\RequestCacheRepository;
+use App\Plugin\RunsPlugins;
 
 use SlimSession\Helper as SessionHelper;
 
 final class InvalidateCacheAction
 {
+    use RunsPlugins;
+
     public $repository;
 
     public function __construct(RequestCacheRepository $repository) {
@@ -30,15 +33,20 @@ final class InvalidateCacheAction
         $query = array();
         parse_str($data["QUERY_STRING"], $query);
 
-        $result = false;
-
         $cacheKeys = $parsedBody->cacheKey;
         if($query && $query["cacheKey"]) {
             $cacheKeys = $query["cacheKey"]; 
         }
 
-        if($cacheKeys) {
-            $result = $this->repository->invalidateCache($cacheKeys);
+        $context = ['request' => $request, 'cacheKeys' => $cacheKeys, 'operation' => 'cache.invalidate'];
+        $pluginResult = $this->runPluginHook('cache.invalidate.before', $context);
+        $result = $pluginResult !== null
+            ? $pluginResult
+            : ($cacheKeys ? $this->repository->invalidateCache($cacheKeys) : false);
+        $context['result'] = $result;
+        $pluginResult = $this->runPluginHook('cache.invalidate.after', $context);
+        if ($pluginResult !== null) {
+            $result = $pluginResult;
         }
 
         $response->getBody()->write((string)json_encode(array("success" => $result)));

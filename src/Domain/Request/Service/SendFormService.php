@@ -40,10 +40,28 @@ final class SendFormService extends RequestService
                 'message' => 'Please fill in all required fields.'
             );
         }
-        
+
         $this->checkPostProof($request);
 
+        $pluginResult = $this->runPluginHook('form.before_forward', [
+            'request' => $request,
+            'postBody' => $postBody,
+            'operation' => 'form.send',
+        ]);
+        if ($pluginResult !== null) {
+            return $pluginResult;
+        }
+
         $response = $this->request(trim($path), $this->settings["services"]["form"], $postBody, $jsonResponse);
+        $pluginResult = $this->runPluginHook('form.after_forward', [
+            'request' => $request,
+            'postBody' => $postBody,
+            'operation' => 'form.send',
+            'result' => $response,
+        ]);
+        if ($pluginResult !== null) {
+            $response = $pluginResult;
+        }
         $statusCode = $response["statusCode"];
         $body = $response["body"];
 

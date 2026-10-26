@@ -6,6 +6,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use App\Domain\Request\Service\GetRobotsTxtService;
+use App\Plugin\RunsPlugins;
 
 use SlimSession\Helper as SessionHelper;
 
@@ -15,6 +16,7 @@ require_once(__DIR__."/../Updater/updater_functions.php");
 
 final class UpdateToVersionAction
 {
+    use RunsPlugins;
     public $getRobotsTxtService;
 
     public function __construct(GetRobotsTxtService $getRobotsTxtService) {
@@ -40,6 +42,13 @@ final class UpdateToVersionAction
                 ->withStatus(201);
         }
 
+        $context = ['request' => $request, 'query' => $query, 'operation' => 'updater.check'];
+        $pluginResult = $this->runPluginHook('updater.before_check', $context);
+        if (is_string($pluginResult)) {
+            $response->getBody()->write($pluginResult);
+            return $response->withHeader('Content-Type', 'text/plain')->withStatus(200);
+        }
+
         $version = $query["version"]; // if version is set, try to update to this version
 
         $version_notifications_array = ausGetVersion(); //get data of latest available version
@@ -50,6 +59,12 @@ final class UpdateToVersionAction
         else //Other case returned - operation failed
         {
             $result = "Version details could not be parsed because of this reason: ".$version_notifications_array['notification_text'];
+        }
+
+        $context['result'] = $result;
+        $pluginResult = $this->runPluginHook('updater.after_check', $context);
+        if (is_string($pluginResult)) {
+            $result = $pluginResult;
         }
 
         $response->getBody()->write($result);

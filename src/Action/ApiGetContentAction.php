@@ -10,9 +10,11 @@ use App\Domain\Request\Service\CacheService;
 use SlimSession\Helper as SessionHelper;
 
 use App\Exception\YnfiniteException;
+use App\Plugin\RunsPlugins;
 
 final class ApiGetContentAction
 {
+    use RunsPlugins;
     private ApiGetContentService $apiService;
 
     public function __construct(ApiGetContentService $apiService) {
@@ -24,7 +26,18 @@ final class ApiGetContentAction
         ResponseInterface $response
     ): ResponseInterface {
         try {
-            $apiResponse = $this->apiService->getContent($request, $_POST);
+            $context = ['request' => $request, 'postData' => $_POST, 'operation' => 'content.fetch'];
+            $pluginResult = $this->runPluginHook('content.before_fetch', $context);
+            if ($pluginResult !== null) {
+                $apiResponse = $pluginResult;
+            } else {
+                $apiResponse = $this->apiService->getContent($request, $_POST);
+            }
+            $context['result'] = $apiResponse;
+            $pluginResult = $this->runPluginHook('content.after_fetch', $context);
+            if ($pluginResult !== null) {
+                $apiResponse = $pluginResult;
+            }
             $response->getBody()->write(json_encode($apiResponse));
         }
         catch (YnfiniteException $e) {
