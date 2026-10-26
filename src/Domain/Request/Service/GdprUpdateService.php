@@ -29,7 +29,26 @@ final class GdprUpdateService extends RequestService
         
         $postBody = $this->getBody($request);
 
+        $pluginResult = $this->runPluginHook('gdpr.update.before_forward', [
+            'request' => $request,
+            'postBody' => $postBody,
+            'operation' => 'gdpr.update',
+        ]);
+        if ($pluginResult !== null) {
+            return $pluginResult;
+        }
+
         $response = $this->request(trim($path), $this->settings["services"]["gdpr_update"], $postBody, $jsonResponse);
+
+        $pluginResult = $this->runPluginHook('gdpr.update.after_forward', [
+            'request' => $request,
+            'postBody' => $postBody,
+            'operation' => 'gdpr.update',
+            'result' => $response,
+        ]);
+        if ($pluginResult !== null) {
+            $response = $pluginResult;
+        }
 
         return $response;
     }

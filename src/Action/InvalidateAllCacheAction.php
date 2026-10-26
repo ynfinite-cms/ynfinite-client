@@ -6,11 +6,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use App\Domain\Request\Repository\RequestCacheRepository;
+use App\Plugin\RunsPlugins;
 
 use SlimSession\Helper as SessionHelper;
 
 final class InvalidateAllCacheAction
 {
+    use RunsPlugins;
 
     public $repository;
 
@@ -23,7 +25,14 @@ final class InvalidateAllCacheAction
         ResponseInterface $response
     ): ResponseInterface {
 
-        $result = $this->repository->invalidateAllCache();
+        $context = ['request' => $request, 'operation' => 'cache.invalidate_all'];
+        $pluginResult = $this->runPluginHook('cache.invalidate_all.before', $context);
+        $result = $pluginResult !== null ? $pluginResult : $this->repository->invalidateAllCache();
+        $context['result'] = $result;
+        $pluginResult = $this->runPluginHook('cache.invalidate_all.after', $context);
+        if ($pluginResult !== null) {
+            $result = $pluginResult;
+        }
  
         $response->getBody()->write((string)json_encode(array("success" => $result)));
 

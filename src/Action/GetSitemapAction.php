@@ -9,11 +9,13 @@ use App\Domain\Request\Service\GetSitemapService;
 use App\Domain\Request\Service\RenderSitemapService;
 use App\Domain\Request\Service\RequestPageService;
 use App\Domain\Request\Service\RenderPageService;
+use App\Plugin\RunsPlugins;
 
 use SlimSession\Helper as SessionHelper;
 
 final class GetSitemapAction
 {
+    use RunsPlugins;
 
     public $getSitemapService;
     public $renderSitemapService;
@@ -33,7 +35,9 @@ final class GetSitemapAction
     }
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface 
     {
-        $sitemap = $this->getSitemapService->getSitemap($request);
+        $context = ['request' => $request, 'operation' => 'sitemap.fetch'];
+        $pluginResult = $this->runPluginHook('sitemap.before_fetch', $context);
+        $sitemap = $pluginResult !== null ? $pluginResult : $this->getSitemapService->getSitemap($request);
 
         // Check if sitemap exists
         if (!$sitemap) {
@@ -41,6 +45,12 @@ final class GetSitemapAction
         }
 
         $renderedSitemap = trim($this->renderSitemapService->render($sitemap));
+        $context['sitemap'] = $sitemap;
+        $context['result'] = $renderedSitemap;
+        $pluginResult = $this->runPluginHook('sitemap.after_render', $context);
+        if ($pluginResult !== null) {
+            $renderedSitemap = $pluginResult;
+        }
 
         // Clear previous output/headers to ensure clean XML
         $response = $response->withBody(new \Slim\Psr7\Stream(fopen('php://temp', 'r+')));

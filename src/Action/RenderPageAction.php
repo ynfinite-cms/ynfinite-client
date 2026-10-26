@@ -11,10 +11,12 @@ use App\Domain\Request\Service\CacheService;
 use SlimSession\Helper as SessionHelper;
 
 use App\Exception\YnfiniteException;
+use App\Plugin\RunsPlugins;
 use Exception;
 
 final class RenderPageAction
 {
+    use RunsPlugins;
     public $requestPageService;
     public $renderPageService;
     public $cacheService;
@@ -59,7 +61,14 @@ final class RenderPageAction
                 );
             }
             
-            $data = $this->requestPageService->getPage($request);
+            $pageContext = ['request' => $request, 'operation' => 'page.fetch'];
+            $pluginResult = $this->runPluginHook('page.before_fetch', $pageContext);
+            $data = $pluginResult !== null ? $pluginResult : $this->requestPageService->getPage($request);
+            $pageContext['result'] = $data;
+            $pluginResult = $this->runPluginHook('page.after_fetch', $pageContext);
+            if ($pluginResult !== null) {
+                $data = $pluginResult;
+            }
 
             if (isset($data['type']) && in_array($data['type'], ['maintenance', 'offline'], true)) {
                 $maintenanceStatus = isset($data['statusCode']) ? (int) $data['statusCode'] : 503;
@@ -93,7 +102,7 @@ final class RenderPageAction
             }
 
             if (isset($data['type']) && $data['type'] === '404') {
-                $renderedTemplate = $this->renderPageService->render($data["templates"], $data["data"]);
+                $renderedTemplate = $this->renderPageWithPlugins($request, $data["templates"], $data["data"]);
                 $response->getBody()->write($renderedTemplate);
                 return $response->withStatus(404);
             }   
@@ -115,7 +124,7 @@ final class RenderPageAction
                     && isset($_POST['fields']['general_password'])) {
                     return $response->withHeader('Location', $_SERVER['REQUEST_URI'])->withStatus(302);
                 }
-                $renderedTemplate = $this->renderPageService->render($data["templates"], $data["data"]);
+                $renderedTemplate = $this->renderPageWithPlugins($request, $data["templates"], $data["data"]);
                 if($data["data"]["page"]["type"] !== "404") {
                     $this->cacheService->createCache("PAGE", $renderedTemplate);
                 }
@@ -150,6 +159,19 @@ final class RenderPageAction
         }
 
         return 'de';
+    }
+
+    private function renderPageWithPlugins(ServerRequestInterface $request, array $templates, array $data): string
+    {
+        $context = ['request' => $request, 'templates' => $templates, 'data' => $data, 'operation' => 'page.render'];
+        $pluginResult = $this->runPluginHook('page.before_render', $context);
+        $rendered = is_string($pluginResult)
+            ? $pluginResult
+            : $this->renderPageService->render($templates, $data);
+
+        $context['result'] = $rendered;
+        $pluginResult = $this->runPluginHook('page.after_render', $context);
+        return is_string($pluginResult) ? $pluginResult : $rendered;
     }
 
     private function getMaintenanceTranslation(string $key, string $lang, string $fallback): string
