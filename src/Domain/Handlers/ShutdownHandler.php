@@ -9,6 +9,8 @@ use App\Domain\Handlers\HttpErrorHandler;
 
 class ShutdownHandler
 {
+    private const FATAL_ERROR_TYPES = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+
     /**
      * @var Request
      */
@@ -40,7 +42,9 @@ class ShutdownHandler
     public function __invoke()
     {
         $error = error_get_last();
-        if ($error) {
+        // Only fatal errors abort the request. Warnings, notices and deprecations must not replace an
+        // already rendered page with a 500 (this broke every HEAD request and truncated GET responses).
+        if ($error && in_array($error['type'], self::FATAL_ERROR_TYPES, true)) {
             $errorFile = $error['file'];
             $errorLine = $error['line'];
             $errorMessage = $error['message'];
@@ -52,14 +56,6 @@ class ShutdownHandler
                     case E_USER_ERROR:
                         $message = "FATAL ERROR: {$errorMessage}. ";
                         $message .= " on line {$errorLine} in file {$errorFile}.";
-                        break;
-
-                    case E_USER_WARNING:
-                        $message = "WARNING: {$errorMessage}";
-                        break;
-
-                    case E_USER_NOTICE:
-                        $message = "NOTICE: {$errorMessage}";
                         break;
 
                     default:
