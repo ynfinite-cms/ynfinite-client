@@ -92,16 +92,16 @@
 			,"aggregateRating": {
 				"@type": "AggregateRating"
 				{% if _yn_schema.aggregateRatingValue is defined and _yn_schema.aggregateRatingValue is not same as(null) %}
-					,"ratingValue": "{{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}"
+					,"ratingValue": {{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.numberOfRatings is defined and _yn_schema.numberOfRatings is not same as(null) %}
-					,"reviewCount": "{{_yn_schema.numberOfRatings|striptags|json_encode|raw}}"
+					,"reviewCount": {{_yn_schema.numberOfRatings|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.highestValueAllowed is defined and _yn_schema.highestValueAllowed is not same as(null) %}
-					,"bestRating": "{{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}"
+					,"bestRating": {{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 				{% if _yn_schema.lowestValueAllowed is defined and _yn_schema.lowestValueAllowed is not same as(null) %}
-					,"worstRating": "{{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}"
+					,"worstRating": {{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 			}
 		{% endif %}
