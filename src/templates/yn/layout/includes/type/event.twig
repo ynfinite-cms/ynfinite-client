@@ -75,7 +75,7 @@
                     {% if _yn_offer.name %}
                         ,"name": {{_yn_offer.name|striptags|json_encode|raw}}
                     {% endif %}
-                    {% if _yn_offer.price %}
+                    {% if _yn_offer.price is defined and _yn_offer.price is not same as(null) %}
                         ,"price": {{_yn_offer.price|striptags|json_encode|raw}}
                     {% endif %}
                     {% if _yn_offer.currency %}

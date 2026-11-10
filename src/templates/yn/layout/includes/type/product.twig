@@ -17,7 +17,7 @@
             "name": {{_yn_schema.brandName|striptags|json_encode|raw}}
         }
     {% endif %}
-    {% if _yn_schema.offerType or _yn_schema.url or _yn_schema.currency or _yn_schema.lowPrice or _yn_schema.highPrice or _yn_schema.offerCount or _yn_schema.price or _yn_schema.priceValidUntil or _yn_schema.availability or _yn_schema.itemCondition %}
+    {% if _yn_schema.offerType or _yn_schema.url or _yn_schema.currency or (_yn_schema.lowPrice is defined and _yn_schema.lowPrice is not same as(null)) or (_yn_schema.highPrice is defined and _yn_schema.highPrice is not same as(null)) or (_yn_schema.numberOfOffers is defined and _yn_schema.numberOfOffers is not same as(null)) or (_yn_schema.price is defined and _yn_schema.price is not same as(null)) or _yn_schema.priceValidUntil or _yn_schema.availability or _yn_schema.itemCondition %}
         ,"offers": {
             {% if _yn_schema.offerType %}
                 "@type": "{{_yn_schema.offerType|raw}}"
@@ -28,16 +28,16 @@
             {% if _yn_schema.currency %}
                 ,"priceCurrency": "{{_yn_schema.currency|raw}}"
             {% endif %}
-            {% if _yn_schema.lowPrice %}
+            {% if _yn_schema.lowPrice is defined and _yn_schema.lowPrice is not same as(null) %}
                 ,"lowPrice": {{_yn_schema.lowPrice|striptags|json_encode|raw}}
             {% endif %}
-            {% if _yn_schema.highPrice %}
+            {% if _yn_schema.highPrice is defined and _yn_schema.highPrice is not same as(null) %}
                 ,"highPrice": {{_yn_schema.highPrice|striptags|json_encode|raw}}
             {% endif %}
-            {% if _yn_schema.numberOfOffers %}
+            {% if _yn_schema.numberOfOffers is defined and _yn_schema.numberOfOffers is not same as(null) %}
                 ,"offerCount": {{_yn_schema.numberOfOffers|striptags|json_encode|raw}}
             {% endif %}
-            {% if _yn_schema.price %}
+            {% if _yn_schema.price is defined and _yn_schema.price is not same as(null) %}
                 ,"price": {{_yn_schema.price|striptags|json_encode|raw}}
             {% endif %}
             {% if _yn_schema.priceValidUntil %}
@@ -80,19 +80,19 @@
 				{% endfor %}
 			]
 		{% endif %}
-		{% if _yn_schema.aggregateRatingValue or _yn_schema.numberOfRatings or _yn_schema.highestValueAllowed or _yn_schema.lowestValueAllowed %}
+        {% if (_yn_schema.aggregateRatingValue is defined and _yn_schema.aggregateRatingValue is not same as(null)) or (_yn_schema.numberOfRatings is defined and _yn_schema.numberOfRatings is not same as(null)) or (_yn_schema.highestValueAllowed is defined and _yn_schema.highestValueAllowed is not same as(null)) or (_yn_schema.lowestValueAllowed is defined and _yn_schema.lowestValueAllowed is not same as(null)) %}
 			,"aggregateRating": {
 				"@type": "AggregateRating"
-				{% if _yn_schema.aggregateRatingValue %}
+                {% if _yn_schema.aggregateRatingValue is defined and _yn_schema.aggregateRatingValue is not same as(null) %}
 					,"ratingValue": {{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}
 				{% endif %}
-				{% if _yn_schema.numberOfRatings %}
+                {% if _yn_schema.numberOfRatings is defined and _yn_schema.numberOfRatings is not same as(null) %}
 					,"reviewCount": {{_yn_schema.numberOfRatings|striptags|json_encode|raw}}
 				{% endif %}
-				{% if _yn_schema.highestValueAllowed %}
+                {% if _yn_schema.highestValueAllowed is defined and _yn_schema.highestValueAllowed is not same as(null) %}
 					,"bestRating": {{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
-				{% if _yn_schema.lowestValueAllowed %}
+                {% if _yn_schema.lowestValueAllowed is defined and _yn_schema.lowestValueAllowed is not same as(null) %}
 					,"worstRating": {{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}
 				{% endif %}
 			}

@@ -1,45 +1,45 @@
 <script type="application/ld+json">
 	{
 	  	"@context": "https://schema.org"
-	  	{% if _yn_schema.variant %}
+	  	{% if _yn_schema.variant is defined and _yn_schema.variant is not same as(null) %}
 			,"@type": "{{_yn_schema.variant|raw}}"
 	  	{% endif %}
-	  	{% if _yn_schema.name %}
-    		,"name": {{_yn_schema.name|striptags|json_encode|raw}}
+	  	{% if _yn_schema.name is defined and _yn_schema.name is not same as(null) %}
+			,"name": {{_yn_schema.name|striptags|json_encode|raw}}
 	  	{% endif %}
-	  	{% if _yn_schema.image %}
+	  	{% if _yn_schema.image is defined and _yn_schema.image is not same as(null) %}
     		,"image": "{{_yn_schema.image[0].path|raw}}"
 	  	{% endif %}
-	  	{% if _yn_schema.url %}
-    		,"url": {{_yn_schema.url|striptags|json_encode|raw}}
+	  	{% if _yn_schema.url is defined and _yn_schema.url is not same as(null) %}
+			,"url": {{_yn_schema.url|striptags|json_encode|raw}}
 	  	{% endif %}
-	  	{% if _yn_schema.phone %}
-    		,"telephone": {{_yn_schema.phone|striptags|json_encode|raw}}
+	  	{% if _yn_schema.phone is defined and _yn_schema.phone is not same as(null) %}
+			,"telephone": {{_yn_schema.phone|striptags|json_encode|raw}}
 	  	{% endif %}
-		{% if _yn_schema.street or _yn_schema.city or _yn_schema.zip or _yn_schema.country %}
+		{% if (_yn_schema.street is defined and _yn_schema.street is not same as(null)) or (_yn_schema.city is defined and _yn_schema.city is not same as(null)) or (_yn_schema.zip is defined and _yn_schema.zip is not same as(null)) or (_yn_schema.country is defined and _yn_schema.country is not same as(null)) %}
 			,"address": {
 				"@type": "PostalAddress"
-				{% if _yn_schema.street %}
+				{% if _yn_schema.street is defined and _yn_schema.street is not same as(null) %}
 					,"streetAddress": {{_yn_schema.street|striptags|json_encode|raw}}
 				{% endif %}
-				{% if _yn_schema.city %}
+				{% if _yn_schema.city is defined and _yn_schema.city is not same as(null) %}
 					,"addressLocality": {{_yn_schema.city|striptags|json_encode|raw}}
 				{% endif %}
-				{% if _yn_schema.zip %}
+				{% if _yn_schema.zip is defined and _yn_schema.zip is not same as(null) %}
 					,"postalCode": {{_yn_schema.zip|striptags|json_encode|raw}}
 				{% endif %}
-				{% if _yn_schema.country %}
+				{% if _yn_schema.country is defined and _yn_schema.country is not same as(null) %}
 					,"addressCountry": {{_yn_schema.country|striptags|json_encode|raw}}
 				{% endif %}
 			}
 		{% endif %}
-		{% if _yn_schema.latitude or _yn_schema.longitude %}
+		{% if (_yn_schema.latitude is defined and _yn_schema.latitude is not same as(null)) or (_yn_schema.longitude is defined and _yn_schema.longitude is not same as(null)) %}
 			,"geo": {
 				"@type": "GeoCoordinates"
-				{% if _yn_schema.latitude %}
+				{% if _yn_schema.latitude is defined and _yn_schema.latitude is not same as(null) %}
 					,"latitude": "{{_yn_schema.latitude|raw}}"
 				{% endif %}
-				{% if _yn_schema.longitude %}
+				{% if _yn_schema.longitude is defined and _yn_schema.longitude is not same as(null) %}
 					,"longitude": "{{_yn_schema.longitude|raw}}"
 				{% endif %}
 			}
@@ -88,20 +88,20 @@
 				{% endfor %}
 			]
 		{% endif %}
-		{% if _yn_schema.aggregateRatingValue or _yn_schema.numberOfRatings or _yn_schema.highestValueAllowed or _yn_schema.lowestValueAllowed %}
+		{% if (_yn_schema.aggregateRatingValue is defined and _yn_schema.aggregateRatingValue is not same as(null)) or (_yn_schema.numberOfRatings is defined and _yn_schema.numberOfRatings is not same as(null)) or (_yn_schema.highestValueAllowed is defined and _yn_schema.highestValueAllowed is not same as(null)) or (_yn_schema.lowestValueAllowed is defined and _yn_schema.lowestValueAllowed is not same as(null)) %}
 			,"aggregateRating": {
 				"@type": "AggregateRating"
-				{% if _yn_schema.aggregateRatingValue %}
-					,"ratingValue": {{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}
+				{% if _yn_schema.aggregateRatingValue is defined and _yn_schema.aggregateRatingValue is not same as(null) %}
+					,"ratingValue": "{{_yn_schema.aggregateRatingValue|striptags|json_encode|raw}}"
 				{% endif %}
-				{% if _yn_schema.numberOfRatings %}
-					,"reviewCount": {{_yn_schema.numberOfRatings|striptags|json_encode|raw}}
+				{% if _yn_schema.numberOfRatings is defined and _yn_schema.numberOfRatings is not same as(null) %}
+					,"reviewCount": "{{_yn_schema.numberOfRatings|striptags|json_encode|raw}}"
 				{% endif %}
-				{% if _yn_schema.highestValueAllowed %}
-					,"bestRating": {{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}
+				{% if _yn_schema.highestValueAllowed is defined and _yn_schema.highestValueAllowed is not same as(null) %}
+					,"bestRating": "{{_yn_schema.highestValueAllowed|striptags|json_encode|raw}}"
 				{% endif %}
-				{% if _yn_schema.lowestValueAllowed %}
-					,"worstRating": {{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}
+				{% if _yn_schema.lowestValueAllowed is defined and _yn_schema.lowestValueAllowed is not same as(null) %}
+					,"worstRating": "{{_yn_schema.lowestValueAllowed|striptags|json_encode|raw}}"
 				{% endif %}
 			}
 		{% endif %}
