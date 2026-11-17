@@ -14,8 +14,8 @@
         {
             "@context": "https://schema.org/",
             "@type": "WebSite",
-            "name": "{{(_ynfinite.content.settings.seo.title ?: _ynfinite.page.meta.title ?: _ynfinite.site.meta.title)|raw}}",
-            "url": "{{_ynfinite.domain.origin|raw}}"
+            "name": {{ (_ynfinite.content.settings.seo.title ?: _ynfinite.page.meta.title ?: _ynfinite.site.meta.title)|json_encode|raw }},
+            "url": {{ _ynfinite.domain.origin|json_encode|raw }}
         }
     </script>
 {% endif %}
