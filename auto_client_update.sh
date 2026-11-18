@@ -10,7 +10,7 @@ SOURCE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 # DEFINE THE RELATIVE PATHS OF ALL ITEMS TO COPY
 FOLDERS_TO_COPY=("config" "development/docker" "scripts" "src" "tmp" "public/assets/vendor/ynfinite")
-FILES_TO_COPY=("build.mjs" "hot-reload-snippet.html" "postcss.config.js" "public/index.php" "vite.config.js" "README.md" ".gitignore" ".prettierrc" "composer.json" "composer.lock")
+FILES_TO_COPY=("build.mjs" "hot-reload-snippet.html" "postcss.config.js" "public/index.php" "vite.config.js" "README.md" ".gitignore" ".prettierrc" "composer.json" "composer.lock" "bitbucket-pipelines.yml")
 
 # -----------------------------------------------------------------------
 # GUI FOLDER SELECTION LOGIC
@@ -122,6 +122,37 @@ for ITEM in "${ALL_ITEMS_TO_COPY[@]}"; do
         
     else
         echo "⚠️ Warning: Source item '$SOURCE_PATH' not found. Skipping."
+    fi
+done
+
+# Copy the Vite dev-server setup from the sibling Brycks repository when available.
+VITE_SOURCE_ROOT="$(cd "$SOURCE_ROOT/../brycks-2022" 2>/dev/null && pwd)"
+if [ -n "$VITE_SOURCE_ROOT" ]; then
+    for ITEM in "development/assets" "package.json" "package-lock.json" "vite.config.js"; do
+        SOURCE_PATH="$VITE_SOURCE_ROOT/$ITEM"
+        DESTINATION_PATH="$DESTINATION_ROOT/$ITEM"
+        if [ -e "$SOURCE_PATH" ]; then
+            mkdir -p "$(dirname "$DESTINATION_PATH")"
+            if [ -d "$SOURCE_PATH" ]; then
+                rm -rf "$DESTINATION_PATH"
+                cp -R "$SOURCE_PATH" "$DESTINATION_PATH"
+            else
+                cp -f "$SOURCE_PATH" "$DESTINATION_PATH"
+            fi
+            echo "✅ Copied Vite setup item: $ITEM"
+        else
+            echo "⚠️ Vite setup item '$SOURCE_PATH' not found. Skipping."
+        fi
+    done
+else
+    echo "❌ Vite setup could not be completed: sibling repository '../brycks-2022' is missing. Skipping Vite setup."
+fi
+
+# Match the five Brycks layouts updated by the upstream change.
+find "$DESTINATION_ROOT/templates" -type f -path '*/layouts/default_layout.twig' -print0 2>/dev/null | while IFS= read -r -d '' LAYOUT_FILE; do
+    if grep -Eq 'type="text/javascript" src="\{\{ _yfunc\("withVersion", "/assets/js/brycks_(classic|modern|premium|rounded|tiles)\.js"\) \}\}"' "$LAYOUT_FILE"; then
+        perl -pi -e 's/type="text\/javascript" src="(\{\{ _yfunc\("withVersion", "\/assets\/js\/brycks_(?:classic|modern|premium|rounded|tiles)\.js"\) \}\})"/type="module" src="$1"/' "$LAYOUT_FILE"
+        echo "✅ Updated default layout: $LAYOUT_FILE"
     fi
 done
 
