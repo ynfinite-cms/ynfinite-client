@@ -52,6 +52,7 @@ The script dynamically copies specific items. Folders are cleanly replaced (exis
 - `src`
 - `tmp`
 - `public/assets/vendor/ynfinite`
+- `development/assets` (from the sibling `../brycks-2022` repository, for Vite)
 
 ### Files Copied:
 
@@ -65,3 +66,6 @@ The script dynamically copies specific items. Folders are cleanly replaced (exis
 - `.prettierrc`
 - `composer.json`
 - `composer.lock`
+- `bitbucket-pipelines.yml`
+
+The Vite setup also copies `package.json`, `package-lock.json`, and `vite.config.js` from `../brycks-2022`. If that sibling repository is missing, Vite setup is skipped with a warning; the rest of the update continues.
