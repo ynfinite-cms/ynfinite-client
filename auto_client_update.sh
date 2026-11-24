@@ -128,17 +128,12 @@ done
 # Copy the Vite dev-server setup from the sibling Brycks repository when available.
 VITE_SOURCE_ROOT="$(cd "$SOURCE_ROOT/../brycks-2022" 2>/dev/null && pwd)"
 if [ -n "$VITE_SOURCE_ROOT" ]; then
-    for ITEM in "development/assets" "package.json" "package-lock.json" "vite.config.js"; do
+    for ITEM in "development/assets/AGENTS.MD" "package.json" "package-lock.json" "vite.config.js"; do
         SOURCE_PATH="$VITE_SOURCE_ROOT/$ITEM"
         DESTINATION_PATH="$DESTINATION_ROOT/$ITEM"
         if [ -e "$SOURCE_PATH" ]; then
             mkdir -p "$(dirname "$DESTINATION_PATH")"
-            if [ -d "$SOURCE_PATH" ]; then
-                rm -rf "$DESTINATION_PATH"
-                cp -R "$SOURCE_PATH" "$DESTINATION_PATH"
-            else
-                cp -f "$SOURCE_PATH" "$DESTINATION_PATH"
-            fi
+            cp -f "$SOURCE_PATH" "$DESTINATION_PATH"
             echo "✅ Copied Vite setup item: $ITEM"
         else
             echo "⚠️ Vite setup item '$SOURCE_PATH' not found. Skipping."
